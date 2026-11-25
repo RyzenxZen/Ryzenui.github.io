@@ -2757,7 +2757,7 @@ R.run("About", function()
             notify("⏳ Chat", "Loading Ryzenxz3n Chat Script...")
             task.spawn(function()
                 local ok, err = pcall(function()
-                    loadstring(game:HttpGet("https://raw.githubusercontent.com/shaikharshu957-sudo/Ryzenui.github.io/refs/heads/main/Ryzenxz3n_Chat_Script_v4.1_FINAL.lua"))()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/RyzenxZen/Ryzenui.github.io/refs/heads/main/Ryzenxz3n_Chat_Script_v4.1_FINAL.lua"))()
                 end)
                 chatBusy = false
                 if ok then
