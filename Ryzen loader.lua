@@ -1,60 +1,60 @@
 
 --[[
  
-                      ✦
+              ░▒▓ R Y Z E N ▓▒░
  
-                  R Y Z E N
-             ─────────────────────
+        ╔══════════════════════════════════╗
+        ║                                  ║
+        ║          ▄████████▄              ║
+        ║        ▄██▀      ▀██▄            ║
+        ║       ██   ▄▄▄▄▄▄   ██           ║
+        ║      ██   █ ▄  ▄ █   ██          ║
+        ║      ██   █  ▄▄  █   ██          ║
+        ║       ██   ▀████▀   ██           ║
+        ║        ▀██▄      ▄██▀            ║
+        ║          ▀████████▀              ║
+        ║                                  ║
+        ╚══════════════════════════════════╝
  
-                PRIVATE LABS
-          ADVANCED SOFTWARE DIVISION
+  ██████╗  ██╗   ██╗ ███████╗ ███████╗ ███╗   ██╗
+  ██╔══██╗ ╚██╗ ██╔╝ ╚══███╔╝ ██╔════╝ ████╗  ██║
+  ██████╔╝  ╚████╔╝    ███╔╝  █████╗   ██╔██╗ ██║
+  ██╔══██╗   ╚██╔╝    ███╔╝   ██╔══╝   ██║╚██╗██║
+  ██║  ██║    ██║    ███████╗ ███████╗ ██║ ╚████║
+  ╚═╝  ╚═╝    ╚═╝    ╚══════╝ ╚══════╝ ╚═╝  ╚═══╝
  
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                 G H O S T  /  01
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  
-              EST. MMXXVI  /  001
+             PRIVATE SOFTWARE DIVISION
+                  FOUNDER : RYZEN
  
+       ┌────────────────────────────────┐
+       │  PROJECT    : RYZEN ULTRA      │
+       │  VERSION    : 1.0.0            │
+       │  FRAMEWORK  : LUAU             │
+       │  BUILD      : PRIVATE          │
+       └────────────────────────────────┘
  
-          ┌  PROJECT IDENTIFICATION
+             [ NO PUBLIC DISTRIBUTION ]
  
-             PRODUCT       RYZEN ULTRA
-             DEVELOPER     RYZEN
-             RELEASE       1.0.0
-             FRAMEWORK     LUAU
-             CLASS         PRIVATE
+           SILENT CODE. DISTINCT IDENTITY.
  
+                RYZEN SYSTEMS © 2026
  
-          ┌  DEVELOPMENT PHILOSOPHY
- 
-             PRECISION IN EVERY DETAIL.
-             PERFORMANCE WITHOUT COMPROMISE.
-             INNOVATION THROUGH CODE.
- 
- 
-                 — SIGNATURE —
- 
-               CRAFTED BY RYZEN
- 
- 
-             R Y Z E N  /  L A B S
-                PRIVATE COLLECTION
- 
- 
-          ─────────────────────────
-                 INITIALIZING
-          ─────────────────────────
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                   CORE START
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  
 ]]
 
--- MAIN SCRIPT
-
+-- MAIN SCRIPT LOADER
 loadstring(game:HttpGet("https://raw.githubusercontent.com/shaikharshu957-sudo/Ryzenui.github.io/refs/heads/main/RYZEN_ALL_IN_ONE.lua"))()
 
 --[[
- 
-          ─────────────────────────
-                   FINISHED
-          ─────────────────────────
- 
-             RYZEN PRIVATE SOFTWARE
-                  © 2026
- 
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                    CORE END
+               RYZEN / GHOST PROTOCOL
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ]]
