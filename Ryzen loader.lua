@@ -1,19 +1,19 @@
 
 --[[
  
-              ░▒▓ R Y Z E N ▓▒░
+                     ░▒▓ R Y Z E N ▓▒░
  
         ╔══════════════════════════════════╗
-        ║                                  ║
-        ║          ▄████████▄              ║
-        ║        ▄██▀      ▀██▄            ║
-        ║       ██   ▄▄▄▄▄▄   ██           ║
-        ║      ██   █ ▄  ▄ █   ██          ║
-        ║      ██   █  ▄▄  █   ██          ║
-        ║       ██   ▀████▀   ██           ║
-        ║        ▀██▄      ▄██▀            ║
-        ║          ▀████████▀              ║
-        ║                                  ║
+        ║                                        ║
+        ║               ▄████████▄             ║
+        ║             ▄██▀      ▀██▄            ║
+        ║            ██   ▄▄▄▄▄▄   ██          ║
+        ║           ██   █ ▄  ▄ █   ██          ║
+        ║           ██   █  ▄▄  █   ██          ║
+        ║            ██   ▀████▀   ██          ║
+        ║             ▀██▄      ▄██▀            ║
+        ║               ▀████████▀             ║
+        ║                                        ║
         ╚══════════════════════════════════╝
  
   ██████╗  ██╗   ██╗ ███████╗ ███████╗ ███╗   ██╗
@@ -50,7 +50,7 @@
 ]]
 
 -- MAIN SCRIPT LOADER
-loadstring(game:HttpGet('https://raw.githubusercontent.com/RyzenxZen/Ryzenui.github.io/refs/heads/main/RYZEN_ALL_IN_ONE.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/RyzenxZen/Ryzenui.github.io/refs/heads/main/RYZEN_ALL_IN_ONE.lua"))()
 
 --[[
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
