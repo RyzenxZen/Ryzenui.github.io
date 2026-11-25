@@ -2742,6 +2742,34 @@ R.run("About", function()
             end)
         end,
     })
+    -- ═══ RYZENXZ3N CHAT ═══
+    U("Paragraph", {
+        Title = "Ryzenxz3n | Gang & Chat System",
+        Content = "Gang chat, daily gang points, leaderboard, stickers aur owner/admin panel. Made by Ryzenxz3n.",
+    })
+    local chatLoaded, chatBusy = false, false
+    U("Button", {
+        Name = "Load Ryzenxz3n Chat Script",
+        Callback = function()
+            if chatLoaded then notify("ℹ Chat", "Ryzenxz3n Chat Script is already loaded") return end
+            if chatBusy then return end
+            chatBusy = true
+            notify("⏳ Chat", "Loading Ryzenxz3n Chat Script...")
+            task.spawn(function()
+                local ok, err = pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/shaikharshu957-sudo/Ryzenui.github.io/refs/heads/main/Ryzenxz3n_Chat_Script_v4.1_FINAL.lua"))()
+                end)
+                chatBusy = false
+                if ok then
+                    chatLoaded = true
+                    notify("✔ Chat", "Ryzenxz3n Chat Script loaded", 4)
+                else
+                    R.errors[#R.errors + 1] = { name = "Ryzenxz3n Chat", err = tostring(err) }
+                    notify("✖ Chat failed", tostring(err):sub(1, 120), 5)
+                end
+            end)
+        end,
+    })
 
     U("Section", "Owner")
     U("Paragraph", {
