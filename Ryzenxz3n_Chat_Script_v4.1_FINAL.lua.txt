@@ -1,5 +1,3 @@
-
-
 local OWNER_NAME = "Arshu8888"   -- <<< APNA ROBLOX USERNAME YAHA LIKHO
 local LOGO_IMAGE = ""            -- optional: apna logo "rbxassetid://123456" (khali = drawn emblem)
 
