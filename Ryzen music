@@ -1,0 +1,673 @@
+-- RYZEN MUSIC | Premium Glass Blue Player
+-- PART 1/3 : Settings + song lists
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local BRAND = "RYZEN MUSIC"
+local SET_RP_NAME = true -- set to false to keep your own RP name and bio
+local VEHICLE_REMOTE = "1NoMoto1rVehicle1s"
+
+-- Song lists
+local bhojpuri = {
+	{Name = "Kera Ke Tham Pa", ID = "133421259018974"},
+	{Name = "Lipstick", ID = "83374498750674"},
+	{Name = "Raja Ki", ID = "96811165899120"},
+	{Name = "Thermameter", ID = "80909238652029"},
+	{Name = "chumma", ID = "133332673199748"},
+	{Name = "cooler", ID = "113570827591124"},
+	{Name = "Banda ego", ID = "77910407493313"},
+	{Name = "bdiya jahat", ID = "83374498750674"},
+	{Name = "Drwaja ke", ID = "113570827591124"},
+	{Name = "Baniya mehraj", ID = "124233673176294"},
+	{Name = "kamariya gole gole", ID = "92471687832864"},
+	{Name = "moh Lelu up Bihar ke", ID = "95909411418420"},
+	{Name = "LAMBA LAMBA GHUNGAT", ID = "78431826650714"},
+	{Name = "sejiya per Aaye baitha", ID = "87577798625777"},
+	{Name = "bansuri (bhojpuri)", ID = "79568658897083"},
+	{Name = "Hamara Marad DJ remix", ID = "131679833636653"},
+	{Name = "sadi karoya", ID = "140415804746906"},
+	{Name = "taki taki dher bhail", ID = "117615820552185"},
+	{Name = "Bihar Ka Jagran", ID = "108588298945210"},
+	{Name = "New Krish Ka gana", ID = "112509603877994"}
+}
+local hindi = {
+	{Name = "Nadiaa", ID = "128688756073670"},
+	{Name = "pal pal jeena", ID = "77002121761232"},
+	{Name = "Jhol", ID = "121180010622504"},
+	{Name = "Haseen Muskan", ID = "136261355668585"},
+	{Name = "Krish Ka gana", ID = "137990574501497"},
+	{Name = "ghadi chain", ID = "136432259987310"},
+	{Name = "Ohh Yaara", ID = "117377307469141"},
+	{Name = "sitam", ID = "81582927737472"},
+	{Name = "akhiyan", ID = "104380086210152"},
+	{Name = "Saason ki mala", ID = "120349214701956"},
+	{Name = "ladki badi anjani hh", ID = "128892246666972"},
+	{Name = "Bada pachtaoge (Jagran)", ID = "79561785821029"},
+	{Name = "dil ne yeh Kaha hai", ID = "113554906905279"},
+	{Name = "saiyaara (Female)", ID = "110710316953203"},
+	{Name = "unke adaanze karam", ID = "95589943778476"},
+	{Name = "Zaroori", ID = "90050076108794"},
+	{Name = "Ranjheya ve", ID = "119786491353134"},
+	{Name = "AAJ KI RAAT X CHUDAI", ID = "73958484988503"},
+	{Name = "DIL NA DIYA X AJAY DJ", ID = "122911160702077"},
+	{Name = "Mujhe Nafrat hai", ID = "88750836439164"}
+}
+local english = {
+	{Name = "Demon slayer", ID = "96885644141047"},
+	{Name = "Tokyo RevengeR", ID = "73036441617290"},
+	{Name = "Under The Influence", ID = "103222441664136"},
+	{Name = "M2 Scar Loud", ID = "124958445624871"},
+	{Name = "EXE SUPER", ID = "131415306381990"},
+	{Name = "doraemon Japanese version", ID = "121640028060880"},
+	{Name = "Love Story", ID = "135528953872601"},
+	{Name = "Confess You love", ID = "87559737835956"},
+	{Name = "Thought", ID = "112738519477450"},
+	{Name = "Weather", ID = "75254239320157"},
+	{Name = "Blue Young Kai (Dizzy)", ID = "84729628311938"},
+	{Name = "Memory reboot", ID = "105158334993991"},
+	{Name = "AUDIO BY DARK SOUND", ID = "87655745800335"},
+	{Name = "I WANNA RUNAWAY", ID = "125579008816192"},
+	{Name = "sweet little Baby", ID = "128961712071619"},
+	{Name = "Real bass", ID = "82089060279054"},
+	{Name = "right On time But Loud", ID = "120576436665675"},
+	{Name = "stars Moon", ID = "112355709978731"},
+	{Name = "D1nic can You?", ID = "15689448519"},
+	{Name = "2017 nostalgia", ID = "72031945149756"}
+}
+local phonk = {
+	{Name = "MONTAGEM DECSCENT", ID = "134687778902887"},
+	{Name = "bells Of Phonks", ID = "100828050594137"},
+	{Name = "DARE", ID = "139188421510869"},
+	{Name = "MONTAGEM VIDA", ID = "79889952866985"},
+	{Name = "MONTAGEM BALADA", ID = "83797836818857"},
+	{Name = "SUPER JET Z FUNK", ID = "85635811474451"},
+	{Name = "DEATH IS NO MORE", ID = "96760299701814"},
+	{Name = "Montagem Smiles", ID = "16831108393"},
+	{Name = "Funk de faasa", ID = "111314366671396"},
+	{Name = "rush Zz", ID = "91299590639144"},
+	{Name = "Gangster Paradise", ID = "6070263388"},
+	{Name = "Fission (Original)", ID = "118349786848415"},
+	{Name = "Escalate Funk", ID = "85306184126616"},
+	{Name = "Resistance Funk", ID = "139470412088097"},
+	{Name = "Crystal Link Super funk", ID = "79400027040201"},
+	{Name = "uh bufon vei Funk", ID = "133815463890793"},
+	{Name = "booya Funk", ID = "101772318848071"},
+	{Name = "Melodia funk", ID = "72844613532784"},
+	{Name = "Xenon Phonk", ID = "127502623565534"},
+	{Name = "Funk fortada", ID = "73351216000380"}
+}
+local memes = {
+	{Name = "UwU", ID = "118235447189969"},
+	{Name = "Senpai", ID = "115498703521334"},
+	{Name = "kiss", ID = "105577043687038"},
+	{Name = "Anime Girl ahn", ID = "104380086210152"},
+	{Name = "18+", ID = "121259252258118"},
+	{Name = "Tom", ID = "140028279221307"},
+	{Name = "Slay", ID = "139740597178232"},
+	{Name = "Scaryy", ID = "139694892021582"},
+	{Name = "Punjabi Meme", ID = "123161971384069"},
+	{Name = "Laadle meow ghop ghop", ID = "88622194255425"},
+	{Name = "Fahhhh", ID = "139999225792687"},
+	{Name = "Shidouu", ID = "89016013924693"},
+	{Name = "Desi rrrrrrr", ID = "3177712713"},
+	{Name = "Laugh", ID = "4767799547"},
+	{Name = "chicken scream", ID = "117909139728666"},
+	{Name = "monkey scream", ID = "7196237097"},
+	{Name = "ice cream lelo", ID = "108896377576102"},
+	{Name = "S-sari roti", ID = "9075261161"},
+	{Name = "Nya zo", ID = "8842446965"},
+	{Name = "Chud Gyi CQ", ID = "134489447055645"}
+}
+-- PART 2/3 : Glass interface
+
+local BLUE = Color3.fromRGB(40, 140, 255)
+local ICE = Color3.fromRGB(185, 225, 255)
+local GLASS = Color3.fromRGB(115, 175, 255)
+local WHITE = Color3.new(1, 1, 1)
+
+local function make(class, props, parent)
+	local object = Instance.new(class)
+	for key, value in pairs(props) do object[key] = value end
+	object.Parent = parent
+	return object
+end
+
+local function round(object, radius)
+	make("UICorner", {CornerRadius = UDim.new(0, radius)}, object)
+end
+
+local function stroke(object, transparency, thickness)
+	return make("UIStroke", {Color = ICE, Transparency = transparency, Thickness = thickness or 1,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border}, object)
+end
+
+local function gradient(object, top, bottom, rotation)
+	make("UIGradient", {Color = ColorSequence.new(top, bottom), Rotation = rotation or 90}, object)
+end
+
+-- Creates a frosted glass element at a fixed place
+local function glass(class, parent, x, y, w, h, extra)
+	local props = {Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(w, h),
+		BackgroundColor3 = GLASS, BackgroundTransparency = 0.88, BorderSizePixel = 0}
+	if class == "TextButton" or class == "TextBox" then
+		props.Font, props.TextSize, props.TextColor3, props.Text = Enum.Font.GothamBold, 13, WHITE, ""
+	end
+	if class == "TextButton" then props.AutoButtonColor = true end
+	if class == "TextBox" then props.ClearTextOnFocus = false end
+	for key, value in pairs(extra or {}) do props[key] = value end
+	local object = make(class, props, parent)
+	round(object, 10)
+	stroke(object, 0.75)
+	return object
+end
+
+local function label(parent, text, size, x, y, w, h, extra)
+	local props = {Text = text, TextSize = size, Position = UDim2.fromOffset(x, y),
+		Size = UDim2.fromOffset(w, h), BackgroundTransparency = 1, TextColor3 = WHITE,
+		Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd}
+	for key, value in pairs(extra or {}) do props[key] = value end
+	return make("TextLabel", props, parent)
+end
+
+local holder = (gethui and gethui()) or game:GetService("CoreGui")
+local old = holder:FindFirstChild("Ryzen_Music")
+if old then old:Destroy() end
+
+local gui = make("ScreenGui", {Name = "Ryzen_Music", IgnoreGuiInset = true, ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling}, holder)
+
+-- Main window
+local window = make("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(520, 320), BackgroundColor3 = WHITE, BackgroundTransparency = 0.14,
+	BorderSizePixel = 0, Active = true}, gui)
+round(window, 20)
+gradient(window, Color3.fromRGB(22, 70, 140), Color3.fromRGB(4, 12, 32), 65)
+local edge = stroke(window, 0.15, 1.5)
+make("UIGradient", {Rotation = 60, Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 0.85),
+	NumberSequenceKeypoint.new(1, 0.2)})}, edge)
+
+-- Light reflection on top of the glass
+local sheen = make("Frame", {Size = UDim2.new(1, 0, 0, 100), BackgroundColor3 = WHITE,
+	BorderSizePixel = 0}, window)
+round(sheen, 20)
+make("UIGradient", {Rotation = 90, Transparency = NumberSequence.new(0.86, 1)}, sheen)
+
+-- Header (drag from here)
+local header = make("Frame", {Size = UDim2.new(1, 0, 0, 56), BackgroundTransparency = 1, Active = true}, window)
+local badge = make("Frame", {Position = UDim2.fromOffset(14, 11), Size = UDim2.fromOffset(36, 36),
+	BackgroundColor3 = WHITE, BorderSizePixel = 0}, header)
+round(badge, 11)
+gradient(badge, Color3.fromRGB(80, 215, 255), Color3.fromRGB(35, 80, 235), 45)
+label(badge, "♫", 21, 0, 0, 36, 36, {TextXAlignment = Enum.TextXAlignment.Center})
+label(header, BRAND, 18, 62, 10, 340, 20, {Font = Enum.Font.GothamBlack})
+local status = label(header, "Pick a song to play", 12, 62, 32, 350, 16, {TextColor3 = ICE})
+local minimizeButton = glass("TextButton", header, 432, 13, 32, 32, {Text = "—"})
+local closeButton = glass("TextButton", header, 474, 13, 32, 32, {Text = "✕"})
+
+-- Category sidebar
+local sidebar = glass("ScrollingFrame", window, 12, 62, 124, 246, {ScrollBarThickness = 2,
+	CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y})
+make("UIListLayout", {Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder,
+	HorizontalAlignment = Enum.HorizontalAlignment.Center}, sidebar)
+make("UIPadding", {PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6)}, sidebar)
+
+-- Search, song list, custom ID and controls
+local search = glass("TextBox", window, 146, 62, 362, 34, {PlaceholderText = "🔍 Search songs..."})
+local list = glass("ScrollingFrame", window, 146, 104, 362, 154, {ScrollBarThickness = 3,
+	ScrollBarImageColor3 = ICE, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y})
+make("UIListLayout", {Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder,
+	HorizontalAlignment = Enum.HorizontalAlignment.Center}, list)
+make("UIPadding", {PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6)}, list)
+local idBox = glass("TextBox", window, 146, 62, 362, 44, {PlaceholderText = "Enter music ID...", Visible = false})
+local idHelp = label(window, "Paste a Roblox audio ID, then tap Play.", 12, 150, 116, 350, 20,
+	{TextColor3 = ICE, Visible = false})
+local playButton = glass("TextButton", window, 146, 266, 177, 42,
+	{Text = "▶  Play", BackgroundColor3 = BLUE, BackgroundTransparency = 0.15})
+local stopButton = glass("TextButton", window, 331, 266, 177, 42, {Text = "■  Stop"})
+
+-- Minimized icon (app icon size)
+local mini = make("TextButton", {AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, -9999, 0.5, 0),
+	Size = UDim2.fromOffset(50, 50), BackgroundColor3 = WHITE, BackgroundTransparency = 0.08,
+	BorderSizePixel = 0, Text = "", Visible = false}, gui)
+round(mini, 15)
+stroke(mini, 0.2, 1.5)
+gradient(mini, Color3.fromRGB(80, 215, 255), Color3.fromRGB(25, 55, 190), 45)
+label(mini, "♫", 28, 0, 0, 50, 50, {TextXAlignment = Enum.TextXAlignment.Center})
+-- PART 3/3 : Auto fit, drag, minimize and music controls
+
+local connections = {}
+local windowScale = make("UIScale", {}, window)
+local miniScale = make("UIScale", {}, mini)
+local fit = 1
+
+local function tween(object, goal)
+	TweenService:Create(object, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), goal):Play()
+end
+
+-- Keeps an element fully inside the screen
+local function keepInside(object, width, height)
+	local screen = gui.AbsoluteSize
+	if screen.X == 0 then return end
+	local maxX = math.max(0, (screen.X - width) / 2 - 8)
+	local maxY = math.max(0, (screen.Y - height) / 2 - 8)
+	local p = object.Position
+	object.Position = UDim2.new(0.5, math.clamp(p.X.Offset, -maxX, maxX), 0.5, math.clamp(p.Y.Offset, -maxY, maxY))
+end
+
+-- Resizes the window for phone, tablet or PC
+local function refit()
+	local screen = gui.AbsoluteSize
+	if screen.X == 0 then return end
+	fit = math.min(screen.X * 0.92 / 520, screen.Y * 0.84 / 320, 1.15)
+	windowScale.Scale = fit
+	keepInside(window, 520 * fit, 320 * fit)
+	keepInside(mini, 50, 50)
+end
+
+local function draggable(handle, target, getSize)
+	local active, startPosition, origin
+	local moved = false
+	handle.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			active, startPosition, origin, moved = input, input.Position, target.Position, false
+		end
+	end)
+	table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+		if not active then return end
+		local isMouse = input.UserInputType == Enum.UserInputType.MouseMovement
+			and active.UserInputType == Enum.UserInputType.MouseButton1
+		if input ~= active and not isMouse then return end
+		local delta = input.Position - startPosition
+		if delta.Magnitude > 6 then moved = true end
+		if moved then
+			target.Position = origin + UDim2.fromOffset(delta.X, delta.Y)
+			keepInside(target, getSize())
+		end
+	end))
+	table.insert(connections, UserInputService.InputEnded:Connect(function(input)
+		if active and (input == active or input.UserInputType == Enum.UserInputType.MouseButton1) then
+			active = nil
+		end
+	end))
+	return function() return moved end
+end
+
+draggable(header, window, function() return 520 * fit, 320 * fit end)
+local miniWasDragged = draggable(mini, mini, function() return 50, 50 end)
+
+minimizeButton.MouseButton1Click:Connect(function()
+	window.Visible = false
+	mini.Visible = true
+	miniScale.Scale = 0.5
+	tween(miniScale, {Scale = 1})
+end)
+
+mini.MouseButton1Click:Connect(function()
+	if miniWasDragged() then return end
+	mini.Visible = false
+	window.Visible = true
+	windowScale.Scale = fit * 0.8
+	tween(windowScale, {Scale = fit})
+end)
+
+-- Game remotes
+local function fire(remoteName, ...)
+	local folder = ReplicatedStorage:FindFirstChild("RE")
+	local remote = folder and folder:FindFirstChild(remoteName)
+	if not remote then return false end
+	return (pcall(remote.FireServer, remote, ...))
+end
+
+local selected, playerMode = nil, false
+local rows = {}
+
+local function paint(button, on)
+	button.BackgroundColor3 = on and BLUE or GLASS
+	button.BackgroundTransparency = on and 0.2 or 0.9
+end
+
+local function play(id, name)
+	if fire(VEHICLE_REMOTE, "PickingScooterMusicText", id) then
+		status.Text = "Playing: " .. name
+	else
+		status.Text = "Music remote not found in this game"
+	end
+end
+
+local function filterSongs()
+	local query = string.lower(search.Text)
+	for button, song in pairs(rows) do
+		button.Visible = string.find(string.lower(song.Name), query, 1, true) ~= nil
+	end
+end
+
+local function loadSongs(songs)
+	for button in pairs(rows) do button:Destroy() end
+	rows = {}
+	for index, song in ipairs(songs) do
+		local row = glass("TextButton", list, 0, 0, 346, 34, {Text = "   ♪  " .. song.Name,
+			TextXAlignment = Enum.TextXAlignment.Left, Font = Enum.Font.GothamMedium,
+			LayoutOrder = index, TextTruncate = Enum.TextTruncate.AtEnd})
+		rows[row] = song
+		paint(row, song == selected)
+		row.MouseButton1Click:Connect(function()
+			selected = song
+			for button, data in pairs(rows) do paint(button, data == selected) end
+			play(song.ID, song.Name)
+		end)
+	end
+	list.CanvasPosition = Vector2.new(0, 0)
+	filterSongs()
+end
+
+local function showPlayer(on)
+	playerMode = on
+	search.Visible, list.Visible = not on, not on
+	idBox.Visible, idHelp.Visible = on, on
+end
+
+local tabs = {
+	{"🥀 Bhojpuri", bhojpuri}, {"🌸 Hindi", hindi}, {"🌍 English", english},
+	{"💀 Phonk", phonk}, {"😏 Memes", memes}, {"🛹 Skateboard", "skate"}, {"🎧 Player", "player"},
+}
+local tabButtons = {}
+
+for index, tab in ipairs(tabs) do
+	local button = glass("TextButton", sidebar, 0, 0, 112, 34, {Text = tab[1], TextSize = 12, LayoutOrder = index})
+	table.insert(tabButtons, button)
+	paint(button, index == 1)
+	button.MouseButton1Click:Connect(function()
+		if tab[2] == "skate" then
+			local sent = fire(VEHICLE_REMOTE, "SkateBoard")
+			status.Text = sent and "Skateboard requested" or "Skateboard remote not found"
+			return
+		end
+		for _, other in ipairs(tabButtons) do paint(other, other == button) end
+		showPlayer(tab[2] == "player")
+		if not playerMode then loadSongs(tab[2]) end
+	end)
+end
+
+search:GetPropertyChangedSignal("Text"):Connect(filterSongs)
+
+playButton.MouseButton1Click:Connect(function()
+	if playerMode then
+		local id = string.match(idBox.Text, "%d+")
+		if id then play(id, "ID " .. id) else status.Text = "Enter a music ID first" end
+	elseif selected then
+		play(selected.ID, selected.Name)
+	else
+		status.Text = "Select a song first"
+	end
+end)
+
+stopButton.MouseButton1Click:Connect(function()
+	local sent = fire(VEHICLE_REMOTE, "PickingScooterMusicText", "")
+	status.Text = sent and "Music stopped" or "Music remote not found in this game"
+end)
+
+closeButton.MouseButton1Click:Connect(function() gui:Destroy() end)
+
+gui.Destroying:Connect(function()
+	for _, connection in ipairs(connections) do connection:Disconnect() end
+end)
+
+table.insert(connections, gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(refit))
+loadSongs(bhojpuri)
+refit()
+
+-- Roleplay name and bio credit
+if SET_RP_NAME then
+	task.delay(1, function()
+		fire("1RPNam1eTex1t", "RolePlayName", BRAND)
+		fire("1SetPlayerBio", BRAND .. " | by RYZEN")
+	end)
+end
+     -- PART 4/4 : Smooth animations and pro effects
+
+local busy = false
+local TOP, BOTTOM = Color3.fromRGB(80, 215, 255), Color3.fromRGB(25, 55, 190)
+
+local function anim(object, time, goal, style, direction)
+	TweenService:Create(object, TweenInfo.new(time, style or Enum.EasingStyle.Quint,
+		direction or Enum.EasingDirection.Out), goal):Play()
+end
+
+-- Rotating light on the window border
+TweenService:Create(edge:FindFirstChildOfClass("UIGradient"),
+	TweenInfo.new(5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, -1), {Rotation = 420}):Play()
+
+-- Colour cover used for fading
+local veil = make("Frame", {Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE,
+	BackgroundTransparency = 1, BorderSizePixel = 0, ZIndex = 50, Visible = false}, window)
+round(veil, 20)
+gradient(veil, TOP, BOTTOM, 45)
+
+-- Shape that morphs between window and icon
+local ghost = make("Frame", {AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = WHITE,
+	BackgroundTransparency = 0.08, BorderSizePixel = 0, Visible = false, ZIndex = 60}, gui)
+local ghostCorner = make("UICorner", {}, ghost)
+stroke(ghost, 0.2, 1.5)
+gradient(ghost, TOP, BOTTOM, 45)
+label(ghost, "♫", 28, 0, 0, 0, 0, {Size = UDim2.fromScale(1, 1),
+	TextXAlignment = Enum.TextXAlignment.Center})
+
+local function morph(toIcon)
+	local big = {Size = UDim2.fromOffset(520 * fit, 320 * fit), Position = window.Position}
+	local small = {Size = UDim2.fromOffset(50, 50), Position = mini.Position}
+	local from, to = small, big
+	if toIcon then from, to = big, small end
+	ghost.Size, ghost.Position = from.Size, from.Position
+	ghostCorner.CornerRadius = UDim.new(0, toIcon and 20 * fit or 15)
+	ghost.Visible = true
+	anim(ghostCorner, 0.42, {CornerRadius = UDim.new(0, toIcon and 15 or 20 * fit)})
+	anim(ghost, 0.42, to, Enum.EasingStyle.Quint, Enum.EasingDirection.InOut)
+	task.wait(0.42)
+end
+
+local function minimize()
+	if busy then return end
+	busy = true
+	veil.Visible = true
+	anim(veil, 0.15, {BackgroundTransparency = 0})
+	task.wait(0.15)
+	window.Visible = false
+	morph(true)
+	ghost.Visible = false
+	mini.Visible = true
+	miniScale.Scale = 1.25
+	anim(miniScale, 0.35, {Scale = 1}, Enum.EasingStyle.Back)
+	busy = false
+end
+
+local function maximize()
+	if busy then return end
+	busy = true
+	mini.Visible = false
+	morph(false)
+	windowScale.Scale = fit
+	veil.BackgroundTransparency, veil.Visible = 0, true
+	window.Visible = true
+	ghost.Visible = false
+	anim(veil, 0.28, {BackgroundTransparency = 1})
+	task.wait(0.28)
+	veil.Visible = false
+	busy = false
+end
+
+-- Replace old buttons so the old instant actions are removed
+local function fresh(button)
+	local copy = button:Clone()
+	copy.Parent = button.Parent
+	button:Destroy()
+	return copy
+end
+
+minimizeButton = fresh(minimizeButton)
+closeButton = fresh(closeButton)
+mini = fresh(mini)
+miniScale = mini:FindFirstChildOfClass("UIScale")
+miniWasDragged = draggable(mini, mini, function() return 50, 50 end)
+
+minimizeButton.MouseButton1Click:Connect(minimize)
+mini.MouseButton1Click:Connect(function()
+	if not miniWasDragged() then maximize() end
+end)
+closeButton.MouseButton1Click:Connect(function()
+	if busy then return end
+	busy = true
+	veil.Visible = true
+	anim(veil, 0.2, {BackgroundTransparency = 0})
+	anim(windowScale, 0.35, {Scale = 0}, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	task.wait(0.35)
+	gui:Destroy()
+end)
+
+-- Smooth selection colour
+paint = function(button, on)
+	anim(button, 0.25, {BackgroundColor3 = on and BLUE or GLASS,
+		BackgroundTransparency = on and 0.2 or 0.9})
+end
+
+-- Border glow on hover and touch
+local function glow(object)
+	if not object:IsA("TextButton") then return end
+	local line = object:FindFirstChildOfClass("UIStroke")
+	if not line then return end
+	local function set(input, value)
+		local kind = input.UserInputType
+		if kind == Enum.UserInputType.MouseMovement or kind == Enum.UserInputType.Touch then
+			anim(line, 0.18, {Transparency = value})
+		end
+	end
+	object.InputBegan:Connect(function(input) set(input, 0.05) end)
+	object.InputEnded:Connect(function(input) set(input, 0.75) end)
+end
+
+for _, button in ipairs({minimizeButton, closeButton, playButton, stopButton}) do glow(button) end
+for _, parent in ipairs({sidebar, list}) do
+	for _, child in ipairs(parent:GetChildren()) do glow(child) end
+	parent.ChildAdded:Connect(function(child) task.defer(glow, child) end)
+end
+
+-- Music equalizer in the header
+status.Size = UDim2.fromOffset(325, 16)
+local bars, barTweens = {}, {}
+for i = 1, 4 do
+	bars[i] = make("Frame", {AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromOffset(390 + i * 7, 39),
+		Size = UDim2.fromOffset(4, 4), BackgroundColor3 = ICE, BorderSizePixel = 0}, header)
+	round(bars[i], 2)
+end
+
+local function setPlaying(on)
+	for _, t in ipairs(barTweens) do t:Cancel() end
+	barTweens = {}
+	for i, bar in ipairs(bars) do
+		bar.Size = UDim2.fromOffset(4, 4)
+		if on then
+			local t = TweenService:Create(bar, TweenInfo.new(0.22 + i * 0.07, Enum.EasingStyle.Sine,
+				Enum.EasingDirection.InOut, -1, true), {Size = UDim2.fromOffset(4, 14 + (i % 2) * 9)})
+			t:Play()
+			table.insert(barTweens, t)
+		end
+	end
+end
+
+local basePlay = play
+play = function(id, name)
+	basePlay(id, name)
+	setPlaying(string.sub(status.Text, 1, 8) == "Playing:")
+end
+stopButton.MouseButton1Click:Connect(function() setPlaying(false) end)
+
+-- Slide animation when changing tabs
+for _, button in ipairs(tabButtons) do
+	button.MouseButton1Click:Connect(function()
+		local target, y = list, 104
+		if playerMode then target, y = idBox, 62 end
+		target.Position = UDim2.fromOffset(164, y)
+		anim(target, 0.35, {Position = UDim2.fromOffset(146, y)})
+	end)
+end
+
+-- Opening animation
+veil.BackgroundTransparency, veil.Visible = 0, true
+windowScale.Scale = fit * 0.7
+anim(windowScale, 0.5, {Scale = fit}, Enum.EasingStyle.Back)
+anim(veil, 0.5, {BackgroundTransparency = 1})
+task.delay(0.5, function()
+	if not busy then veil.Visible = false end
+end)
+           -- PART 5/5 : Hoverboard, rainbow vehicle and remove button
+
+local HOVER_NAME = "Hoverboard" -- change this if your game uses another name
+local COLOR_REMOTE = "1Player1sCa1r"
+local RAINBOW_DELAY = 0.25 -- bigger number = slower and safer
+
+for index, button in ipairs(tabButtons) do button.LayoutOrder = index * 10 end
+
+local function sideButton(text, order)
+	return glass("TextButton", sidebar, 0, 0, 112, 34, {Text = text, TextSize = 12, LayoutOrder = order})
+end
+
+local hoverButton = sideButton("🛸 Hoverboard", 61)
+local rainbowButton = sideButton("🌈 Rainbow: OFF", 62)
+local removeButton = sideButton("🗑 Remove ride", 63)
+
+hoverButton.MouseButton1Click:Connect(function()
+	local sent = fire(VEHICLE_REMOTE, HOVER_NAME)
+	status.Text = sent and "Hoverboard requested" or "Hoverboard remote not found"
+end)
+
+local badgeGradient = badge:FindFirstChildOfClass("UIGradient")
+local normalBadge = badgeGradient.Color
+local rainbowRun = 0
+local rainbowOn = false
+
+local function setRainbow(on)
+	rainbowOn = on
+	rainbowRun = rainbowRun + 1
+	local myRun = rainbowRun
+	rainbowButton.Text = on and "🌈 Rainbow: ON" or "🌈 Rainbow: OFF"
+	paint(rainbowButton, on)
+
+	if not on then
+		badgeGradient.Color = normalBadge
+		edge.Color = ICE
+		for _, bar in ipairs(bars) do bar.BackgroundColor3 = ICE end
+		return
+	end
+
+	task.spawn(function()
+		local hue = 0
+		while rainbowRun == myRun and gui.Parent do
+			hue = (hue + 0.045) % 1
+			local color = Color3.fromHSV(hue, 1, 1)
+			if not fire(COLOR_REMOTE, "NoMotorColor", color) then
+				setRainbow(false)
+				status.Text = "Colour remote not found"
+				break
+			end
+			-- The interface glows in the same colour
+			badgeGradient.Color = ColorSequence.new(color, Color3.fromHSV((hue + 0.2) % 1, 0.8, 0.9))
+			edge.Color = color
+			for _, bar in ipairs(bars) do bar.BackgroundColor3 = color end
+			task.wait(RAINBOW_DELAY)
+		end
+	end)
+end
+
+rainbowButton.MouseButton1Click:Connect(function()
+	status.Text = rainbowOn and "Rainbow off" or "Rainbow on"
+	setRainbow(not rainbowOn)
+end)
+
+removeButton.MouseButton1Click:Connect(function()
+	setRainbow(false)
+	local sent = fire(VEHICLE_REMOTE, "Delete NoMotorVehicle")
+	status.Text = sent and "Ride removed" or "Vehicle remote not found"
+end)
