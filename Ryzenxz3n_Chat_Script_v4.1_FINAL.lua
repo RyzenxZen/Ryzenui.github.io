@@ -1,26 +1,7 @@
---[[
-    Ryzenxz3n | Gang & Chat System  v4.0 PRO  (Cyber Edition)
 
-    NEW IN v4.0
-    - Naya cyber intro: terminal boot -> blue radial screen -> wing emblem + ripples -> glitch title -> progress
-    - Chat me player ki Roblox PFP (headshot) aati hai
-    - Owner / Admin system + ADMIN tab (sirf owner/admin ko dikhta hai)
-        Owner : Ban, Unban, Mute, Unmute, Kick from gang, Make/Remove Admin, Announce, Set gang points, Delete gang
-        Admin : Mute, Unmute, Kick from gang, Announce
-    - Error aaye to screen pe red box me dikhega (pehle script chup-chaap ruk jati thi)
-    - Locals kam kiye (Lua ki 200 local limit se bachne ke liye)
-    - Gang daily points + leaderboard (Top 3 animation) pehle jaisa
-    - v4.1: STICKERS (emoji, word pills, image decals) + sticker tray button 😀
 
-    ZARURI: neeche OWNER_NAME me APNA Roblox USERNAME likho (display name nahi).
-
-    NOTE: Ye client-side script hai. "Ban" ka matlab script ke andar ban (us player ke messages
-    hide, gang se remove, uska UI lock). Roblox game se kick/ban nahi hota.
-]]
-
-local OWNER_NAME = "Arshu8888"   -- <<< APNA ROBLOX USERNAME YAHA LIKHO
-local LOGO_IMAGE = ""            -- optional: apna logo "rbxassetid://123456" (khali = drawn emblem)
-
+local OWNER_NAME = "Arshu8888"   
+local LOGO_IMAGE = ""            
 local Players = game:GetService("Players")
 
 ----------------------------------------------------------------
@@ -1528,31 +1509,32 @@ for i, w in ipairs({
 }) do
 	addSticker(2, "w" .. i, { txt = w[1], c1 = w[2], c2 = w[3] })
 end
-
+ 
 -- 3) image stickers (Roblox decal IDs)
 local IMG_STICKERS = {
-	{ 3, "c1", 73002367912362 },   -- cat + money
-	{ 3, "c2", 71999030813587 },   -- cat + flower
-	{ 3, "c3", 133251082112509 },  -- big-eyed goober
-	{ 3, "c4", 94766951507843 },   -- sunglasses goober
-	{ 3, "c5", 115744147858434 },  -- tired goober on phone
-	{ 3, "c6", 70504108674492 },   -- puddle cat
-	{ 4, "m1", 138012757949307 },  -- monkey
-	{ 4, "m2", 16850598713 },      -- crying cat
-	{ 5, "a1", 115867520715352 },
-	{ 5, "a2", 121463076333232 },
-	{ 5, "a3", 90859222824831 },
-	{ 5, "a4", 94448808776110 },
-	{ 5, "a5", 88870742770869 },
-	{ 5, "a6", 86236538164868 },
-	{ 4, "m3", 126447901821034 },
-	{ 4, "m4", 110248026065657 },
-	{ 4, "m5", 133012698925337 },
-	{ 4, "m6", 71254500503266 },
+    { 3, "c1", 73002367912362 },   -- cat + money
+    { 3, "c2", 71999030813587 },   -- cat + flower
+    { 3, "c3", 133251082112509 },  -- big-eyed goober
+    { 3, "c4", 94766951507843 },   -- sunglasses goober
+    { 3, "c5", 115744147858434 },  -- tired goober on phone
+    { 3, "c6", 70504108674492 },   -- puddle cat
+    { 3, "c7", 110248026065657},
+    { 4, "m1", 138012757949307 },  -- monkey
+    { 4, "m2", 16850598713 },      -- crying cat
+    { 4, "m3", 126447901821034},
+    { 4, "m4", 133012698925337},
+    { 4, "m5", 71254500503266},
+    { 5, "a1", 115867520715352 },
+    { 5, "a2", 121463076333232 },
+    { 5, "a3", 90859222824831 },
+    { 5, "a4", 94448808776110 },
+    { 5, "a5", 88870742770869 },
+    { 5, "a6", 86236538164868 },
 }
 for _, s in ipairs(IMG_STICKERS) do
-	addSticker(s[1], s[2], { id = s[3] })
+    addSticker(s[1], s[2], { id = s[3] })
 end
+ 
 
 -- decal id != image id, isliye pehle thumbnail (rbxthumb) try karte hain, na chale to rbxassetid
 local function loadStickerImage(img, id)
