@@ -1,0 +1,2145 @@
+--[[
+    Ryzenxz3n | Gang & Chat System  v4.0 PRO  (Cyber Edition)
+
+    NEW IN v4.0
+    - Naya cyber intro: terminal boot -> blue radial screen -> wing emblem + ripples -> glitch title -> progress
+    - Chat me player ki Roblox PFP (headshot) aati hai
+    - Owner / Admin system + ADMIN tab (sirf owner/admin ko dikhta hai)
+        Owner : Ban, Unban, Mute, Unmute, Kick from gang, Make/Remove Admin, Announce, Set gang points, Delete gang
+        Admin : Mute, Unmute, Kick from gang, Announce
+    - Error aaye to screen pe red box me dikhega (pehle script chup-chaap ruk jati thi)
+    - Locals kam kiye (Lua ki 200 local limit se bachne ke liye)
+    - Gang daily points + leaderboard (Top 3 animation) pehle jaisa
+    - v4.1: STICKERS (emoji, word pills, image decals) + sticker tray button 😀
+
+    ZARURI: neeche OWNER_NAME me APNA Roblox USERNAME likho (display name nahi).
+
+    NOTE: Ye client-side script hai. "Ban" ka matlab script ke andar ban (us player ke messages
+    hide, gang se remove, uska UI lock). Roblox game se kick/ban nahi hota.
+]]
+
+local OWNER_NAME = "Arshu8888"   -- <<< APNA ROBLOX USERNAME YAHA LIKHO
+local LOGO_IMAGE = ""            -- optional: apna logo "rbxassetid://123456" (khali = drawn emblem)
+
+local Players = game:GetService("Players")
+
+----------------------------------------------------------------
+-- ERROR CATCHER (error screen pe dikhega)
+----------------------------------------------------------------
+local function fatal(msg)
+	warn("[Ryzenxz3n] " .. tostring(msg))
+	pcall(function()
+		local parent = (gethui and gethui()) or Players.LocalPlayer:WaitForChild("PlayerGui")
+		local g = Instance.new("ScreenGui")
+		g.Name = "Ryzenxz3nError"
+		g.ResetOnSpawn = false
+		g.DisplayOrder = 10000
+		g.Parent = parent
+		local b = Instance.new("TextButton")
+		b.Size = UDim2.new(0.9, 0, 0, 150)
+		b.Position = UDim2.new(0.05, 0, 0.04, 0)
+		b.BackgroundColor3 = Color3.fromRGB(60, 10, 16)
+		b.TextColor3 = Color3.new(1, 1, 1)
+		b.Font = Enum.Font.Code
+		b.TextSize = 12
+		b.TextWrapped = true
+		b.TextXAlignment = Enum.TextXAlignment.Left
+		b.TextYAlignment = Enum.TextYAlignment.Top
+		b.Text = "Ryzenxz3n ERROR (tap to close):\n" .. string.sub(tostring(msg), 1, 700)
+		b.Parent = g
+		b.MouseButton1Click:Connect(function() g:Destroy() end)
+	end)
+end
+
+local function handler(e) return tostring(e) .. "\n" .. debug.traceback() end
+
+local function go(fn)
+	task.spawn(function()
+		local ok, e = xpcall(fn, handler)
+		if not ok then fatal(e) end
+	end)
+end
+
+local function main()
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local TextChatService = game:GetService("TextChatService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local HttpService = game:GetService("HttpService")
+
+local player = Players.LocalPlayer
+local BRAND = "Ryzenxz3n"
+local VERSION = "v4.1 PRO"
+local TAG = "RZ1|"
+local MAX_LEN = 150
+local SAVE_FILE = "Ryzenxz3n_v4_data.json"
+local BASE_W, BASE_H = 340, 360
+local SIZES = { 0.7, 0.85, 1 }
+
+local C = {
+	bg = Color3.fromRGB(6, 14, 32),
+	panel = Color3.fromRGB(11, 26, 56),
+	panel2 = Color3.fromRGB(19, 44, 88),
+	accent = Color3.fromRGB(36, 132, 255),
+	accent2 = Color3.fromRGB(0, 220, 255),
+	accent3 = Color3.fromRGB(120, 200, 255),
+	text = Color3.fromRGB(255, 255, 255),
+	sub = Color3.fromRGB(150, 175, 210),
+	red = Color3.fromRGB(225, 60, 80),
+	gold = Color3.fromRGB(255, 205, 60),
+	silver = Color3.fromRGB(210, 220, 235),
+	bronze = Color3.fromRGB(215, 130, 55),
+	green = Color3.fromRGB(60, 200, 120),
+}
+
+----------------------------------------------------------------
+-- CLEANUP OLD VERSIONS
+----------------------------------------------------------------
+if _G.RyzenxCleanup then pcall(_G.RyzenxCleanup) end
+
+local conns, ambient, rowTweens = {}, {}, {}
+local uiAlive = true
+
+local function bind(sig, fn)
+	local c = sig:Connect(fn)
+	table.insert(conns, c)
+	return c
+end
+
+local guiParent
+do
+	local ok, h = pcall(function() return gethui and gethui() end)
+	guiParent = (ok and h) or player:WaitForChild("PlayerGui")
+	for _, p in ipairs({ guiParent, player:WaitForChild("PlayerGui") }) do
+		for _, n in ipairs({ "RyzenIshaVIP", "Ryzenxz3nVIP" }) do
+			local o = p:FindFirstChild(n)
+			if o then o:Destroy() end
+		end
+	end
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "Ryzenxz3nVIP"
+screenGui.ResetOnSpawn = false
+screenGui.IgnoreGuiInset = true
+screenGui.DisplayOrder = 9999
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = guiParent
+
+----------------------------------------------------------------
+-- HELPERS
+----------------------------------------------------------------
+local kp = ColorSequenceKeypoint.new
+
+local function new(class, props, parent)
+	local o = Instance.new(class)
+	for k, v in pairs(props or {}) do o[k] = v end
+	if parent then o.Parent = parent end
+	return o
+end
+local function F(props, parent)
+	props.BorderSizePixel = 0
+	return new("Frame", props, parent)
+end
+local function L(props, parent)
+	if props.BackgroundTransparency == nil then props.BackgroundTransparency = 1 end
+	props.Font = props.Font or Enum.Font.GothamMedium
+	props.TextColor3 = props.TextColor3 or C.text
+	props.TextSize = props.TextSize or 12
+	return new("TextLabel", props, parent)
+end
+local function corner(o, r) return new("UICorner", { CornerRadius = UDim.new(0, r) }, o) end
+
+local function tween(o, t, props, style, dir)
+	local tw = TweenService:Create(o, TweenInfo.new(t, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out), props)
+	tw:Play()
+	return tw
+end
+local function loopTween(list, o, t, props, style, reverses, delay)
+	local tw = TweenService:Create(o, TweenInfo.new(t, style or Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, reverses or false, delay or 0), props)
+	tw:Play()
+	if list then table.insert(list, tw) end
+	return tw
+end
+local function cancelAll(list)
+	for i = #list, 1, -1 do
+		pcall(function() list[i]:Cancel() end)
+		list[i] = nil
+	end
+end
+
+local function gradient(parent, c1, c2, rot)
+	return new("UIGradient", { Color = ColorSequence.new(c1, c2), Rotation = rot or 0 }, parent)
+end
+local function gradient3(parent, c1, c2, c3, rot)
+	return new("UIGradient", { Color = ColorSequence.new({ kp(0, c1), kp(0.5, c2), kp(1, c3) }), Rotation = rot or 0 }, parent)
+end
+
+local function makeButton(parent, props, radius)
+	props.AutoButtonColor = false
+	props.BorderSizePixel = 0
+	props.Font = props.Font or Enum.Font.GothamBold
+	props.TextColor3 = props.TextColor3 or C.text
+	local b = new("TextButton", props, parent)
+	corner(b, radius or 8)
+	local sc = new("UIScale", {}, b)
+	local base = b.BackgroundColor3
+	b.MouseEnter:Connect(function() tween(b, 0.15, { BackgroundColor3 = base:Lerp(Color3.new(1, 1, 1), 0.15) }) end)
+	b.MouseLeave:Connect(function()
+		tween(b, 0.15, { BackgroundColor3 = base })
+		tween(sc, 0.12, { Scale = 1 })
+	end)
+	b.MouseButton1Down:Connect(function() tween(sc, 0.08, { Scale = 0.94 }) end)
+	b.MouseButton1Up:Connect(function() tween(sc, 0.15, { Scale = 1 }, Enum.EasingStyle.Back) end)
+	return b
+end
+
+local function makeScroll(parent, size, pos)
+	local s = new("ScrollingFrame", {
+		Size = size or UDim2.fromScale(1, 1),
+		Position = pos or UDim2.new(),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 3,
+		ScrollBarImageColor3 = C.accent,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+	}, parent)
+	new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, s)
+	new("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingRight = UDim.new(0, 4) }, s)
+	return s
+end
+
+local function clearScroll(s)
+	for _, c in ipairs(s:GetChildren()) do
+		if c:IsA("GuiObject") then c:Destroy() end
+	end
+end
+
+local function makeDraggable(handle, target, onClick)
+	local dragging, moved, startIn, startPos = false, false, nil, nil
+	handle.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging, moved = true, false
+			startIn, startPos = input.Position, target.Position
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+					if not moved and onClick then onClick() end
+				end
+			end)
+		end
+	end)
+	bind(UserInputService.InputChanged, function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local d = input.Position - startIn
+			if d.Magnitude > 6 then moved = true end
+			if moved then
+				target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+			end
+		end
+	end)
+end
+
+local function hueFor(name)
+	local s = 0
+	for i = 1, #name do s = s + name:byte(i) * i end
+	return Color3.fromHSV((s % 360) / 360, 0.55, 0.9)
+end
+
+local function nowTime()
+	local ok, t = pcall(function() return workspace:GetServerTimeNow() end)
+	if ok and type(t) == "number" then return t end
+	return os.time()
+end
+local function dayNow() return math.floor(nowTime() / 86400) end
+
+local function validGang(n) return type(n) == "string" and #n >= 2 and #n <= 16 and not n:find("[^%w _%-]") end
+local function validName(n) return type(n) == "string" and #n >= 1 and #n <= 24 and not n:find("[^%w_]") end
+
+-- Roblox profile picture (headshot) with cache
+local thumbCache = {}
+local function getThumb(name, cb)
+	if thumbCache[name] then cb(thumbCache[name]) return end
+	go(function()
+		local ok, id = pcall(function()
+			local p = Players:FindFirstChild(name)
+			if p then return p.UserId end
+			return Players:GetUserIdFromNameAsync(name)
+		end)
+		if not ok or not id then return end
+		local ok2, url = pcall(function()
+			return (Players:GetUserThumbnailAsync(id, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100))
+		end)
+		if ok2 and url then
+			thumbCache[name] = url
+			cb(url)
+		end
+	end)
+end
+
+----------------------------------------------------------------
+-- STATE + ROLES + SAVE / LOAD
+----------------------------------------------------------------
+local gangs = {}        -- [gang] = { owner, members = {[n]=true}, points, day, today = {[n]=true}, touched }
+local playerGang = {}   -- [playerName] = gang
+local dayChecked = {}
+local lastSnap = {}
+local admins, banned, muted = {}, {}, {}
+local lastCheck = 0
+local sizeIdx = 2
+local currentView = "chat"
+local dirty = false
+local locked = false
+
+local function isOwner(n) return n == OWNER_NAME end
+local function isAdmin(n) return n == OWNER_NAME or admins[n] == true end
+local function myGang() return playerGang[player.Name] end
+local function countMembers(g)
+	local n = 0
+	for _ in pairs(g.members) do n += 1 end
+	return n
+end
+local function newGang(owner)
+	return { owner = owner, members = {}, points = 0, day = 0, today = {}, touched = dayNow() }
+end
+local function markDirty() dirty = true end
+local function listOf(set)
+	local t = {}
+	for k in pairs(set) do table.insert(t, k) end
+	table.sort(t)
+	return t
+end
+local function fillSet(set, arr)
+	for _, n in ipairs(arr or {}) do
+		if validName(n) then set[n] = true end
+	end
+end
+
+local canFS = type(writefile) == "function" and type(readfile) == "function" and type(isfile) == "function"
+
+local function saveData()
+	if not canFS then return end
+	local out = {
+		v = 4, lastCheck = lastCheck, sizeIdx = sizeIdx, gangs = {},
+		admins = listOf(admins), banned = listOf(banned), muted = listOf(muted),
+	}
+	for name, g in pairs(gangs) do
+		out.gangs[name] = { owner = g.owner, members = listOf(g.members), points = g.points, day = g.day, today = listOf(g.today), touched = g.touched }
+	end
+	pcall(function() writefile(SAVE_FILE, HttpService:JSONEncode(out)) end)
+	dirty = false
+end
+
+local function loadData()
+	if not canFS then return end
+	local ok, raw = pcall(function()
+		if isfile(SAVE_FILE) then return readfile(SAVE_FILE) end
+	end)
+	if not ok or not raw then return end
+	local ok2, data = pcall(function() return HttpService:JSONDecode(raw) end)
+	if not ok2 or type(data) ~= "table" then return end
+	lastCheck = tonumber(data.lastCheck) or 0
+	sizeIdx = math.clamp(math.floor(tonumber(data.sizeIdx) or 2), 1, #SIZES)
+	fillSet(admins, data.admins)
+	fillSet(banned, data.banned)
+	fillSet(muted, data.muted)
+	local today = dayNow()
+	for name, d in pairs(data.gangs or {}) do
+		if validGang(name) and type(d) == "table" and validName(d.owner) then
+			local touched = tonumber(d.touched) or today
+			if today - touched <= 14 then
+				local g = newGang(d.owner)
+				g.points = math.max(0, math.floor(tonumber(d.points) or 0))
+				g.day = tonumber(d.day) or 0
+				g.touched = touched
+				for _, m in ipairs(d.members or {}) do
+					if validName(m) then g.members[m] = true playerGang[m] = name end
+				end
+				for _, m in ipairs(d.today or {}) do
+					if validName(m) then
+						g.today[m] = true
+						if g.day > 0 then dayChecked[m] = g.day end
+					end
+				end
+				gangs[name] = g
+			end
+		end
+	end
+end
+loadData()
+admins[OWNER_NAME] = nil -- owner is always admin implicitly
+
+-- forward declarations
+local toast, queueSend, addMessage, runCommand, refreshGangUI, requestRefresh, refreshAdmin
+local layoutTabs, showView, lockOut, unload, showAnnounce, deleteGang, removeMember
+
+local U = {}  -- all UI references live here (keeps local count low)
+
+----------------------------------------------------------------
+-- MAIN WINDOW
+----------------------------------------------------------------
+U.holder = F({
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Size = UDim2.fromOffset(BASE_W, BASE_H),
+	Position = UDim2.fromScale(0.5, 0.5),
+	BackgroundTransparency = 1,
+	Visible = false,
+}, screenGui)
+U.holderScale = new("UIScale", {}, U.holder)
+
+local function applyFit()
+	local vp = screenGui.AbsoluteSize
+	if vp.X <= 0 or vp.Y <= 0 then return end
+	local fit = math.min(1, (vp.Y * 0.92) / BASE_H, (vp.X * 0.94) / BASE_W)
+	U.holderScale.Scale = math.max(0.4, fit * SIZES[sizeIdx])
+end
+applyFit()
+bind(screenGui:GetPropertyChangedSignal("AbsoluteSize"), applyFit)
+
+U.main = F({
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Size = UDim2.fromScale(1, 1),
+	Position = UDim2.fromScale(0.5, 0.5),
+	BackgroundColor3 = C.bg,
+	BackgroundTransparency = 0.03,
+	ClipsDescendants = true,
+}, U.holder)
+corner(U.main, 16)
+U.mainScale = new("UIScale", { Scale = 0 }, U.main)
+do
+	local st = new("UIStroke", { Thickness = 1.8, Color = Color3.new(1, 1, 1) }, U.main)
+	U.strokeGrad = gradient3(st, C.accent, C.accent2, C.accent, 0)
+end
+
+-- Title bar
+U.titleBar = F({ Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 }, U.main)
+do
+	local t = L({ Size = UDim2.new(1, -130, 0, 22), Position = UDim2.fromOffset(14, 5), Text = BRAND, Font = Enum.Font.GothamBlack, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Left }, U.titleBar)
+	U.titleGrad = gradient(t, C.accent2, C.accent3, 0)
+	local dot = F({ Position = UDim2.fromOffset(15, 31), Size = UDim2.fromOffset(7, 7), BackgroundColor3 = C.green }, U.titleBar)
+	corner(dot, 4)
+	U.subLbl = L({ Size = UDim2.new(1, -130, 0, 12), Position = UDim2.fromOffset(27, 28), Text = "Gang & Chat", TextSize = 10, TextColor3 = C.sub, TextXAlignment = Enum.TextXAlignment.Left }, U.titleBar)
+end
+local function updateOnline()
+	U.subLbl.Text = "Gang & Chat  •  " .. #Players:GetPlayers() .. " online"
+end
+updateOnline()
+
+U.sizeBtn = makeButton(U.titleBar, { Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, -98, 0, 9), BackgroundColor3 = C.panel2, Text = "⤢", TextSize = 14 }, 8)
+U.minBtn = makeButton(U.titleBar, { Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, -66, 0, 9), BackgroundColor3 = C.panel2, Text = "—", TextSize = 13 }, 8)
+U.closeBtn = makeButton(U.titleBar, { Size = UDim2.fromOffset(26, 26), Position = UDim2.new(1, -34, 0, 9), BackgroundColor3 = C.red, Text = "X", TextSize = 12 }, 8)
+
+-- Tabs (3rd tab = ADMIN, only for owner/admin)
+U.tabBar = F({ Size = UDim2.new(1, -20, 0, 34), Position = UDim2.fromOffset(10, 48), BackgroundColor3 = C.panel }, U.main)
+corner(U.tabBar, 10)
+U.tabInd = F({ Size = UDim2.new(0.5, -4, 1, -4), Position = UDim2.fromOffset(2, 2), BackgroundColor3 = Color3.new(1, 1, 1) }, U.tabBar)
+corner(U.tabInd, 8)
+gradient(U.tabInd, C.accent, Color3.fromRGB(20, 90, 200), 90)
+
+local function makeTab(text)
+	return new("TextButton", {
+		Size = UDim2.new(0.5, 0, 1, 0), BackgroundTransparency = 1, Text = text,
+		Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = C.sub, ZIndex = 3,
+	}, U.tabBar)
+end
+U.chatTab = makeTab("💬 CHAT")
+U.gangTab = makeTab("🏆 GANG")
+U.adminTab = makeTab("🛡 ADMIN")
+U.tabN = 2
+
+-- Content area + views
+U.content = F({ Size = UDim2.new(1, -16, 1, -146), Position = UDim2.fromOffset(8, 90), BackgroundTransparency = 1 }, U.main)
+U.views = {}
+for _, name in ipairs({ "chat", "gangHome", "gangInfo", "gangChat", "admin" }) do
+	U.views[name] = new("CanvasGroup", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false }, U.content)
+end
+
+-- Input bar
+U.inputBar = F({ Size = UDim2.new(1, -16, 0, 42), Position = UDim2.new(0, 8, 1, -50), BackgroundColor3 = C.panel }, U.main)
+corner(U.inputBar, 21)
+do
+	local ist = new("UIStroke", { Color = C.panel2, Thickness = 1.2 }, U.inputBar)
+	U.inputBox = new("TextBox", {
+		Size = UDim2.new(1, -56, 1, 0), Position = UDim2.fromOffset(16, 0), BackgroundTransparency = 1,
+		PlaceholderText = "Message...", PlaceholderColor3 = C.sub, Text = "", TextColor3 = C.text,
+		Font = Enum.Font.GothamMedium, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
+	}, U.inputBar)
+	U.sendBtn = makeButton(U.inputBar, { Size = UDim2.fromOffset(32, 32), Position = UDim2.new(1, -37, 0.5, -16), BackgroundColor3 = C.accent, Text = "➤", TextSize = 14 }, 16)
+	U.inputBox.Focused:Connect(function() tween(ist, 0.2, { Color = C.accent2 }) end)
+	U.inputBox.FocusLost:Connect(function() tween(ist, 0.2, { Color = C.panel2 }) end)
+end
+
+-- Toast
+U.toast = L({
+	AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -56), Size = UDim2.fromOffset(0, 26),
+	AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = C.accent, BackgroundTransparency = 1, TextTransparency = 1,
+	Text = "", Font = Enum.Font.GothamBold, TextSize = 11, ZIndex = 40,
+}, U.main)
+corner(U.toast, 13)
+new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }, U.toast)
+local toastToken = 0
+function toast(text, color)
+	toastToken += 1
+	local t = toastToken
+	U.toast.Text = text
+	U.toast.BackgroundColor3 = color or C.accent
+	U.toast.Position = UDim2.new(0.5, 0, 1, -50)
+	tween(U.toast, 0.25, { BackgroundTransparency = 0.05, TextTransparency = 0, Position = UDim2.new(0.5, 0, 1, -60) }, Enum.EasingStyle.Back)
+	task.delay(2.4, function()
+		if t == toastToken and uiAlive then tween(U.toast, 0.3, { BackgroundTransparency = 1, TextTransparency = 1 }) end
+	end)
+end
+
+-- Announcement banner (top of window)
+U.banner = L({
+	Size = UDim2.new(1, -20, 0, 0), Position = UDim2.fromOffset(10, 48), AutomaticSize = Enum.AutomaticSize.Y,
+	BackgroundColor3 = Color3.fromRGB(150, 100, 0), BackgroundTransparency = 0.05, Text = "", TextWrapped = true,
+	Font = Enum.Font.GothamBold, TextSize = 12, Visible = false, ZIndex = 45,
+}, U.main)
+corner(U.banner, 10)
+new("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8) }, U.banner)
+local bannerToken = 0
+function showAnnounce(sender, text)
+	bannerToken += 1
+	local t = bannerToken
+	U.banner.Text = "📢 " .. sender .. ": " .. text
+	U.banner.Visible = true
+	addMessage(U.chatScroll, "", "📢 ANNOUNCEMENT from " .. sender .. ": " .. text, true)
+	task.delay(8, function()
+		if t == bannerToken and uiAlive then U.banner.Visible = false end
+	end)
+end
+
+----------------------------------------------------------------
+-- MESSAGES (with Roblox profile pictures)
+----------------------------------------------------------------
+U.chatScroll = makeScroll(U.views.chat)
+local order = 0
+
+local function scrollDown(scroll)
+	task.spawn(function()
+		task.wait(0.07)
+		if scroll and scroll.Parent then
+			scroll.CanvasPosition = Vector2.new(0, math.max(0, scroll.AbsoluteCanvasSize.Y - scroll.AbsoluteSize.Y))
+		end
+	end)
+end
+
+function addMessage(scroll, name, text, isSystem)
+	if not scroll or not scroll.Parent then return end
+	order += 1
+
+	local kids = 0
+	for _, c in ipairs(scroll:GetChildren()) do
+		if c:IsA("GuiObject") then kids += 1 end
+	end
+	if kids >= 80 then
+		for _, c in ipairs(scroll:GetChildren()) do
+			if c:IsA("GuiObject") then c:Destroy() break end
+		end
+	end
+
+	if isSystem then
+		local l = L({ Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Text = text, TextColor3 = C.sub, TextSize = 11, TextWrapped = true, TextTransparency = 1, LayoutOrder = order }, scroll)
+		tween(l, 0.35, { TextTransparency = 0 })
+		scrollDown(scroll)
+		return
+	end
+
+	local isMine = (name == player.Name)
+	local owner, adm = isOwner(name), isAdmin(name)
+
+	local row = F({ Size = UDim2.new(1, -6, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = order }, scroll)
+	new("UISizeConstraint", { MinSize = Vector2.new(0, 36) }, row)
+
+	-- avatar: letter first, Roblox headshot fades in when loaded
+	local dp = F({ Size = UDim2.fromOffset(32, 32), BackgroundColor3 = hueFor(name) }, row)
+	corner(dp, 16)
+	if owner or adm then
+		new("UIStroke", { Color = owner and C.gold or C.accent2, Thickness = 1.8 }, dp)
+	end
+	L({ Size = UDim2.fromScale(1, 1), Text = string.upper(string.sub(name, 1, 1)), Font = Enum.Font.GothamBlack, TextSize = 15 }, dp)
+	local img = new("ImageLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ImageTransparency = 1, ZIndex = 2 }, dp)
+	corner(img, 16)
+	getThumb(name, function(url)
+		if img.Parent then
+			img.Image = url
+			tween(img, 0.3, { ImageTransparency = 0 })
+		end
+	end)
+
+	local body = F({ Size = UDim2.new(1, -42, 0, 0), Position = UDim2.fromOffset(42, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 }, row)
+	new("UIListLayout", { Padding = UDim.new(0, 3), SortOrder = Enum.SortOrder.LayoutOrder }, body)
+
+	local tagTxt = owner and "  👑 OWNER" or (adm and "  🛡 ADMIN" or "")
+	L({
+		Size = UDim2.new(1, 0, 0, 13), Text = name .. tagTxt, Font = Enum.Font.GothamBold, TextSize = 11,
+		TextColor3 = owner and C.gold or (adm and C.accent2 or C.accent3), TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = 1,
+	}, body)
+
+	local bubble = L({
+		Size = UDim2.fromOffset(0, 0), AutomaticSize = Enum.AutomaticSize.XY,
+		BackgroundColor3 = isMine and Color3.fromRGB(28, 100, 215) or C.panel2, BackgroundTransparency = 1, TextTransparency = 1,
+		Text = text, TextSize = 13, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, LayoutOrder = 2,
+	}, body)
+	corner(bubble, 12)
+	new("UISizeConstraint", { MaxSize = Vector2.new(190, math.huge) }, bubble)
+	new("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingTop = UDim.new(0, 7), PaddingBottom = UDim.new(0, 7) }, bubble)
+	local bs = new("UIScale", { Scale = 0.8 }, bubble)
+	tween(bubble, 0.25, { BackgroundTransparency = 0.05, TextTransparency = 0 })
+	tween(bs, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+	scrollDown(scroll)
+end
+
+addMessage(U.chatScroll, "", "Welcome to " .. BRAND .. " ✨", true)
+addMessage(U.chatScroll, "", "📅 Daily bonus: har member jo aaj online aaye = gang ko +1 point", true)
+
+----------------------------------------------------------------
+-- GANG HOME / INFO / CHAT VIEWS
+----------------------------------------------------------------
+U.topBtn = makeButton(U.views.gangHome, { Size = UDim2.new(1, -4, 0, 36), BackgroundColor3 = Color3.new(1, 1, 1), Text = "➕  CREATE NEW GANG", TextSize = 12 }, 10)
+gradient(U.topBtn, C.accent, Color3.fromRGB(20, 90, 200), 0)
+U.gangList = makeScroll(U.views.gangHome, UDim2.new(1, 0, 1, -46), UDim2.fromOffset(0, 46))
+
+U.infoScroll = makeScroll(U.views.gangInfo)
+do
+	local s = U.infoScroll
+	local card = F({ Size = UDim2.new(1, -4, 0, 92), BackgroundColor3 = C.panel, LayoutOrder = 1 }, s)
+	corner(card, 12)
+	local st = new("UIStroke", { Thickness = 1.4, Color = Color3.new(1, 1, 1) }, card)
+	loopTween(ambient, gradient3(st, C.accent, C.accent2, C.accent, 0), 5, { Rotation = 360 })
+	U.infoName = L({ Size = UDim2.new(1, -110, 0, 24), Position = UDim2.fromOffset(12, 8), Text = "Your Gang", Font = Enum.Font.GothamBlack, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd }, card)
+	gradient(U.infoName, C.accent2, C.accent3, 0)
+	U.infoOwner = L({ Size = UDim2.new(1, -110, 0, 14), Position = UDim2.fromOffset(12, 34), TextColor3 = C.gold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd }, card)
+	U.rankPill = L({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 10), Size = UDim2.fromOffset(84, 24), BackgroundTransparency = 0, BackgroundColor3 = C.panel2, Text = "🏆 #-", Font = Enum.Font.GothamBlack }, card)
+	corner(U.rankPill, 12)
+	U.infoPoints = L({ Size = UDim2.new(1, -24, 0, 28), Position = UDim2.fromOffset(12, 56), Text = "⭐ 0 Points", Font = Enum.Font.GothamBlack, TextSize = 20, TextColor3 = C.gold, TextXAlignment = Enum.TextXAlignment.Left }, card)
+
+	local td = F({ Size = UDim2.new(1, -4, 0, 70), BackgroundColor3 = C.panel, LayoutOrder = 2 }, s)
+	corner(td, 12)
+	L({ Size = UDim2.new(1, -100, 0, 16), Position = UDim2.fromOffset(12, 8), Text = "📅 Today's check-in", Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left }, td)
+	U.todayCount = L({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 8), Size = UDim2.fromOffset(80, 16), Text = "0/0", Font = Enum.Font.GothamBlack, TextSize = 13, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Right }, td)
+	local bar = F({ Position = UDim2.fromOffset(12, 30), Size = UDim2.new(1, -24, 0, 8), BackgroundColor3 = C.panel2 }, td)
+	corner(bar, 4)
+	U.todayFill = F({ Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1) }, bar)
+	corner(U.todayFill, 4)
+	gradient(U.todayFill, C.green, C.accent2, 0)
+	U.todayNote = L({ Size = UDim2.new(1, -24, 0, 24), Position = UDim2.fromOffset(12, 42), TextSize = 10, TextColor3 = C.sub, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top }, td)
+
+	local mc = F({ Size = UDim2.new(1, -4, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = C.panel, LayoutOrder = 3 }, s)
+	corner(mc, 12)
+	new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12), PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10) }, mc)
+	U.infoMembers = L({ Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, RichText = true, TextSize = 11, TextColor3 = C.sub, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top }, mc)
+
+	U.openChatBtn = makeButton(s, { Size = UDim2.new(1, -4, 0, 38), BackgroundColor3 = C.accent, Text = "💬  Open Gang Chat", TextSize = 12, LayoutOrder = 4 }, 10)
+	U.lbBtn = makeButton(s, { Size = UDim2.new(1, -4, 0, 34), BackgroundColor3 = C.panel2, Text = "🏆  Leaderboard", TextSize = 12, LayoutOrder = 5 }, 10)
+	U.leaveBtn = makeButton(s, { Size = UDim2.new(1, -4, 0, 34), BackgroundColor3 = C.red, Text = "Leave Gang", TextSize = 12, LayoutOrder = 6 }, 10)
+	U.deleteBtn = makeButton(s, { Size = UDim2.new(1, -4, 0, 34), BackgroundColor3 = C.red, Text = "Delete Gang", TextSize = 12, Visible = false, LayoutOrder = 7 }, 10)
+end
+
+U.backBtn = makeButton(U.views.gangChat, { Size = UDim2.fromOffset(64, 26), Position = UDim2.fromOffset(2, 0), BackgroundColor3 = C.panel2, Text = "⬅ Back", TextSize = 11 }, 8)
+U.gChatTitle = L({ Size = UDim2.new(1, -80, 0, 26), Position = UDim2.fromOffset(74, 0), Text = "GANG CHAT", Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = C.accent3, TextXAlignment = Enum.TextXAlignment.Left }, U.views.gangChat)
+U.gangScroll = makeScroll(U.views.gangChat, UDim2.new(1, 0, 1, -32), UDim2.fromOffset(0, 32))
+
+----------------------------------------------------------------
+-- CREATE GANG MODAL
+----------------------------------------------------------------
+U.modal = new("CanvasGroup", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, GroupTransparency = 1, Visible = false, ZIndex = 50 }, U.main)
+F({ Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.45, ZIndex = 50 }, U.modal)
+do
+	local card = F({ AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(250, 150), Position = UDim2.fromScale(0.5, 0.5), BackgroundColor3 = C.panel, ZIndex = 51 }, U.modal)
+	corner(card, 14)
+	new("UIStroke", { Color = C.accent, Thickness = 1.4 }, card)
+	U.modalScale = new("UIScale", { Scale = 0.8 }, card)
+	L({ Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 8), Text = "Create Gang", Font = Enum.Font.GothamBlack, TextSize = 15, ZIndex = 52 }, card)
+	local nf = F({ Size = UDim2.new(1, -30, 0, 38), Position = UDim2.fromOffset(15, 44), BackgroundColor3 = C.panel2, ZIndex = 52 }, card)
+	corner(nf, 10)
+	U.nameBox = new("TextBox", {
+		Size = UDim2.new(1, -20, 1, 0), Position = UDim2.fromOffset(10, 0), BackgroundTransparency = 1, Text = "",
+		PlaceholderText = "Gang name (2-16 chars)", PlaceholderColor3 = C.sub, TextColor3 = C.text, Font = Enum.Font.GothamMedium,
+		TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false, ZIndex = 53,
+	}, nf)
+	U.cancelBtn = makeButton(card, { Size = UDim2.new(0.5, -20, 0, 32), Position = UDim2.fromOffset(15, 100), BackgroundColor3 = C.panel2, Text = "Cancel", TextSize = 12, ZIndex = 52 }, 9)
+	U.createBtn = makeButton(card, { Size = UDim2.new(0.5, -20, 0, 32), Position = UDim2.new(0.5, 5, 0, 100), BackgroundColor3 = C.accent, Text = "Create", TextSize = 12, ZIndex = 52 }, 9)
+end
+local function openModal()
+	U.nameBox.Text = ""
+	U.modal.Visible = true
+	U.modal.GroupTransparency = 1
+	U.modalScale.Scale = 0.8
+	tween(U.modal, 0.2, { GroupTransparency = 0 })
+	tween(U.modalScale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+end
+local function closeModal()
+	tween(U.modal, 0.18, { GroupTransparency = 1 })
+	tween(U.modalScale, 0.18, { Scale = 0.85 })
+	task.delay(0.2, function() U.modal.Visible = false end)
+end
+
+----------------------------------------------------------------
+-- CHAT TRANSPORT
+----------------------------------------------------------------
+local queue = {}
+local function rawSend(str)
+	pcall(function()
+		if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+			local ch = TextChatService.TextChannels:FindFirstChild("RBXGeneral") or TextChatService.TextChannels:FindFirstChildWhichIsA("TextChannel")
+			ch:SendAsync(str)
+		else
+			ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(str, "All")
+		end
+	end)
+end
+function queueSend(str, urgent)
+	if urgent then table.insert(queue, 1, str) else table.insert(queue, str) end
+	if #queue > 14 then table.remove(queue, #queue > 14 and 1 or 1) end
+end
+go(function()
+	while uiAlive do
+		local m = table.remove(queue, 1)
+		if m then
+			rawSend(m)
+			task.wait(1.2)
+		else
+			task.wait(0.1)
+		end
+	end
+end)
+
+-- hide protocol messages in chat window AND overhead bubbles
+pcall(function()
+	TextChatService.OnIncomingMessage = function(m)
+		if m.Text and string.sub(m.Text, 1, #TAG) == TAG then
+			local p = Instance.new("TextChatMessageProperties")
+			p.Text = ""
+			pcall(function() p.PrefixText = "" end)
+			return p
+		end
+	end
+end)
+pcall(function()
+	TextChatService.OnBubbleAdded = function(message)
+		if message.Text and string.sub(message.Text, 1, #TAG) == TAG then
+			local p = Instance.new("BubbleChatMessageProperties")
+			pcall(function() p.BackgroundTransparency = 1 end)
+			pcall(function() p.TextSize = 1 end)
+			pcall(function() p.TailVisible = false end)
+			pcall(function() p.TextColor3 = Color3.new(0, 0, 0) end)
+			pcall(function() p.PaddingLeft = 0 p.PaddingRight = 0 p.PaddingTop = 0 p.PaddingBottom = 0 end)
+			return p
+		end
+	end
+end)
+
+----------------------------------------------------------------
+-- GANG LOGIC
+----------------------------------------------------------------
+function removeMember(pname)
+	local gn = playerGang[pname]
+	if not gn then return end
+	playerGang[pname] = nil
+	local g = gangs[gn]
+	if g then g.members[pname] = nil end
+	markDirty()
+end
+function deleteGang(gn)
+	local g = gangs[gn]
+	if not g then return end
+	for m in pairs(g.members) do playerGang[m] = nil end
+	gangs[gn] = nil
+	markDirty()
+end
+local function kickFromGang(name)
+	local gn = playerGang[name]
+	if not gn then return end
+	local g = gangs[gn]
+	if g and g.owner == name then deleteGang(gn) else removeMember(name) end
+end
+
+local function applyJoin(sender, gang, owner)
+	if banned[sender] or not validGang(gang) or not validName(owner) then return end
+	local old = playerGang[sender]
+	if old and old ~= gang then
+		local og = gangs[old]
+		if og and og.owner == sender then return end
+		removeMember(sender)
+	end
+	local g = gangs[gang]
+	if not g then
+		g = newGang(owner)
+		gangs[gang] = g
+	elseif g.owner ~= owner then
+		return
+	end
+	local was = g.members[sender]
+	g.members[sender] = true
+	playerGang[sender] = gang
+	g.touched = dayNow()
+	markDirty()
+	if not was and sender ~= player.Name and myGang() == gang then
+		addMessage(U.gangScroll, "", sender .. " joined the gang", true)
+	end
+end
+local function applyLeave(sender, gang)
+	local g = gangs[gang]
+	if not g or playerGang[sender] ~= gang or g.owner == sender then return end
+	removeMember(sender)
+	if myGang() == gang then addMessage(U.gangScroll, "", sender .. " left the gang", true) end
+end
+local function applyDelete(sender, gang)
+	local g = gangs[gang]
+	if not g or g.owner ~= sender then return end
+	local wasMine = (myGang() == gang)
+	deleteGang(gang)
+	if wasMine and sender ~= player.Name then toast("Your gang was deleted by the owner", C.red) end
+end
+
+-- DAILY POINTS: each member = max 1 point per UTC day
+local function applyCheckin(sender, gang, day)
+	local g = gangs[gang]
+	if banned[sender] or not g or not g.members[sender] then return false end
+	if day ~= dayNow() then return false end
+	if day > g.day then g.day = day g.today = {} end
+	if day < g.day then return false end
+	if dayChecked[sender] == day or g.today[sender] then
+		dayChecked[sender] = day
+		return false
+	end
+	dayChecked[sender] = day
+	g.today[sender] = true
+	g.points += 1
+	g.touched = day
+	markDirty()
+	return true
+end
+local function applySnapshot(sender, gang, total, day, names)
+	local g = gangs[gang]
+	if not g or not g.members[sender] then return end
+	lastSnap[gang] = tick()
+	if day > dayNow() or total > 1000000 or day < g.day then return end
+	local added = 0
+	if day > g.day then g.day = day g.today = {} end
+	for n in string.gmatch(names or "", "[%w_]+") do
+		if validName(n) and not g.today[n] then
+			g.today[n] = true
+			dayChecked[n] = day
+			added += 1
+		end
+	end
+	local cand = math.max(g.points + added, total)
+	if cand ~= g.points then g.points = cand markDirty() end
+	g.touched = dayNow()
+end
+local function snapshotMsg(gn)
+	local g = gangs[gn]
+	if not g then return nil end
+	local names, len = {}, 0
+	for m in pairs(g.today) do
+		if len + #m + 1 > 90 then break end
+		table.insert(names, m)
+		len += #m + 1
+	end
+	return TAG .. "PTS|" .. gn .. "|" .. g.points .. "|" .. g.day .. "|" .. table.concat(names, ",")
+end
+local function doCheckin()
+	local gn = myGang()
+	if not gn then return end
+	local d = dayNow()
+	if lastCheck >= d then return end
+	lastCheck = d
+	markDirty()
+	if applyCheckin(player.Name, gn, d) then
+		queueSend(TAG .. "CHK|" .. gn .. "|" .. d)
+		toast("+1 gang point 📅", C.green)
+	end
+end
+
+----------------------------------------------------------------
+-- OWNER / ADMIN COMMANDS
+----------------------------------------------------------------
+local OWNER_ONLY = { ban = true, unban = true, admin = true, unadmin = true, setpts = true, delgang = true }
+
+function lockOut()
+	if locked then return end
+	locked = true
+	local o = F({ Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(14, 0, 4), ZIndex = 500 }, screenGui)
+	L({ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.new(0.8, 0, 0, 90), Text = "🚫 You are banned from " .. BRAND, Font = Enum.Font.GothamBlack, TextSize = 20, TextWrapped = true, ZIndex = 501 }, o)
+	task.delay(4, function() if unload then unload() end end)
+end
+
+function runCommand(sender, act, target, arg)
+	if not isAdmin(sender) then return end
+	if OWNER_ONLY[act] and not isOwner(sender) then return end
+	local function say(t) addMessage(U.chatScroll, "", t, true) end
+
+	if act == "announce" then
+		if #arg > 0 then showAnnounce(sender, string.sub(arg, 1, 100)) end
+		return
+	elseif act == "setpts" then
+		local g, n = gangs[target], tonumber(arg)
+		if g and n then
+			g.points = math.clamp(math.floor(n), 0, 1000000)
+			markDirty()
+			say("⭐ " .. sender .. " set points of " .. target .. " to " .. g.points)
+		end
+	elseif act == "delgang" then
+		if gangs[target] then
+			deleteGang(target)
+			say("🗑 " .. sender .. " deleted gang " .. target)
+		end
+	else
+		if not validName(target) or isOwner(target) then return end
+		if (act == "mute" or act == "kick") and isAdmin(target) and not isOwner(sender) then return end
+		if act == "ban" then
+			banned[target] = true
+			admins[target] = nil
+			muted[target] = nil
+			kickFromGang(target)
+			say("🚫 " .. target .. " was banned by " .. sender)
+			if target == player.Name then lockOut() end
+		elseif act == "unban" then
+			banned[target] = nil
+			say("♻ " .. target .. " was unbanned")
+		elseif act == "mute" then
+			muted[target] = true
+			say("🔇 " .. target .. " was muted by " .. sender)
+		elseif act == "unmute" then
+			muted[target] = nil
+			say("🔊 " .. target .. " was unmuted")
+		elseif act == "kick" then
+			kickFromGang(target)
+			say("👢 " .. target .. " was removed from gang by " .. sender)
+		elseif act == "admin" then
+			admins[target] = true
+			say("🛡 " .. target .. " is now an admin")
+			if target == player.Name then toast("You are now ADMIN 🛡", C.green) end
+		elseif act == "unadmin" then
+			admins[target] = nil
+			say("❌ " .. target .. " is no longer admin")
+		else
+			return
+		end
+	end
+	markDirty()
+	layoutTabs()
+	requestRefresh()
+	refreshAdmin()
+end
+
+local function sendCmd(act, target, arg)
+	if not isAdmin(player.Name) then return end
+	queueSend(TAG .. "CMD|" .. act .. "|" .. (target or "-") .. "|" .. (arg or ""), true)
+	runCommand(player.Name, act, target or "-", arg or "")
+end
+
+local function resolveTarget()
+	local t = (U.tgtBox.Text:gsub("%s", ""))
+	if t == "" then toast("Pehle player select karo", C.red) return nil end
+	local low = t:lower()
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p.Name:lower() == low then return p.Name end
+	end
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p.Name:lower():sub(1, #low) == low or p.DisplayName:lower():sub(1, #low) == low then return p.Name end
+	end
+	if validName(t) then return t end
+	toast("Invalid username", C.red)
+	return nil
+end
+
+local function sendLists() -- owner -> everyone (authoritative lists)
+	for _, which in ipairs({ "admins", "banned", "muted" }) do
+		local set = (which == "admins" and admins) or (which == "banned" and banned) or muted
+		local mode, chunk, len = "R", {}, 0
+		local function flush()
+			queueSend(TAG .. "LST|" .. which .. "|" .. mode .. "|" .. table.concat(chunk, ","))
+			mode, chunk, len = "A", {}, 0
+		end
+		for _, n in ipairs(listOf(set)) do
+			if len + #n + 1 > 110 then flush() end
+			table.insert(chunk, n)
+			len += #n + 1
+		end
+		flush()
+	end
+end
+
+----------------------------------------------------------------
+-- INCOMING MESSAGES
+----------------------------------------------------------------
+local function handleIncoming(sender, msg)
+	if type(msg) ~= "string" or string.sub(msg, 1, #TAG) ~= TAG then return end
+	local isMe = (sender == player.Name)
+	if banned[sender] and not isOwner(sender) then return end
+
+	local body = string.sub(msg, #TAG + 1)
+	local kind = body:match("^(%a+)")
+	if not kind then return end
+	local rest = string.sub(body, #kind + 2)
+
+	if kind == "C" then
+		if not isMe and not muted[sender] then addMessage(U.chatScroll, sender, rest) end
+	elseif kind == "G" then
+		local gang, text = rest:match("^([^|]*)|(.*)$")
+		if gang and text and not isMe and not muted[sender] and myGang() == gang and playerGang[sender] == gang then
+			addMessage(U.gangScroll, sender, text)
+		end
+	elseif kind == "JOIN" then
+		local gang, owner = rest:match("^([^|]*)|(.*)$")
+		if gang and owner then applyJoin(sender, gang, owner) end
+	elseif kind == "LEAVE" then
+		applyLeave(sender, rest)
+	elseif kind == "DEL" then
+		applyDelete(sender, rest)
+	elseif kind == "CHK" then
+		local gang, day = rest:match("^([^|]*)|(%d+)$")
+		if gang and day and applyCheckin(sender, gang, tonumber(day)) and myGang() == gang then
+			addMessage(U.gangScroll, "", "📅 " .. sender .. " checked in  (+1 point)", true)
+		end
+	elseif kind == "PTS" then
+		local gang, total, day, names = rest:match("^([^|]*)|(%d+)|(%d+)|?(.*)$")
+		if gang and total and day then applySnapshot(sender, gang, tonumber(total), tonumber(day), names) end
+	elseif kind == "CMD" then
+		if not isMe then
+			local act, target, arg = rest:match("^(%a+)|([^|]*)|?(.*)$")
+			if act then runCommand(sender, act, target, arg or "") end
+		end
+	elseif kind == "LST" then
+		if isOwner(sender) and not isMe then
+			local which, mode, names = rest:match("^(%a+)|(%a)|?(.*)$")
+			local set = (which == "admins" and admins) or (which == "banned" and banned) or (which == "muted" and muted) or nil
+			if set then
+				if mode == "R" then
+					for k in pairs(set) do set[k] = nil end
+				end
+				for n in string.gmatch(names or "", "[%w_]+") do
+					if validName(n) and n ~= OWNER_NAME then set[n] = true end
+				end
+				markDirty()
+				layoutTabs()
+				refreshAdmin()
+				if banned[player.Name] then lockOut() end
+			end
+		end
+	elseif kind == "SYNC" then
+		if not isMe then
+			if isOwner(player.Name) then
+				task.delay(0.5 + math.random(), function() if uiAlive then sendLists() end end)
+			end
+			local gn = myGang()
+			if gn and gangs[gn] then
+				task.delay(0.3 + math.random() * 2, function()
+					if uiAlive and myGang() == gn and gangs[gn] and tick() - (lastSnap[gn] or 0) > 3 then
+						queueSend(TAG .. "JOIN|" .. gn .. "|" .. gangs[gn].owner)
+						local snap = snapshotMsg(gn)
+						if snap then queueSend(snap) end
+					end
+				end)
+			end
+		end
+	end
+
+	if kind ~= "C" and kind ~= "G" and kind ~= "CMD" and uiAlive then requestRefresh() end
+end
+
+if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+	bind(TextChatService.MessageReceived, function(m)
+		local src = m.TextSource
+		if not src then return end
+		local p = Players:GetPlayerByUserId(src.UserId)
+		if p then handleIncoming(p.Name, m.Text) end
+	end)
+else
+	local function hook(p) bind(p.Chatted, function(msg) handleIncoming(p.Name, msg) end) end
+	for _, p in ipairs(Players:GetPlayers()) do hook(p) end
+	bind(Players.PlayerAdded, hook)
+end
+bind(Players.PlayerAdded, function() updateOnline() requestRefresh() end)
+bind(Players.PlayerRemoving, function()
+	task.defer(function()
+		updateOnline()
+		requestRefresh()
+	end)
+end)
+
+----------------------------------------------------------------
+-- ADMIN PANEL UI
+----------------------------------------------------------------
+U.adm = makeScroll(U.views.admin)
+U.actBtns = {}
+local function admCard(h, ord)
+	local f = F({ Size = UDim2.new(1, -4, 0, h), BackgroundColor3 = C.panel, LayoutOrder = ord }, U.adm)
+	corner(f, 12)
+	return f
+end
+local function admBox(parent, ph, pos, size)
+	local bg = F({ Position = pos, Size = size, BackgroundColor3 = C.panel2 }, parent)
+	corner(bg, 8)
+	return new("TextBox", {
+		Size = UDim2.new(1, -16, 1, 0), Position = UDim2.fromOffset(8, 0), BackgroundTransparency = 1, Text = "",
+		PlaceholderText = ph, PlaceholderColor3 = C.sub, TextColor3 = C.text, Font = Enum.Font.GothamMedium, TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left, ClearTextOnFocus = false,
+	}, bg)
+end
+
+do
+	-- header
+	local c1 = admCard(54, 1)
+	U.admRole = L({ Size = UDim2.new(1, -24, 0, 22), Position = UDim2.fromOffset(12, 8), Font = Enum.Font.GothamBlack, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Left }, c1)
+	U.admStats = L({ Size = UDim2.new(1, -24, 0, 14), Position = UDim2.fromOffset(12, 32), TextSize = 10, TextColor3 = C.sub, TextXAlignment = Enum.TextXAlignment.Left }, c1)
+
+	-- target
+	local c2 = admCard(76, 2)
+	L({ Size = UDim2.new(1, -24, 0, 16), Position = UDim2.fromOffset(12, 6), Text = "🎯 Target player", Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left }, c2)
+	U.tgtBox = admBox(c2, "Username (ya neeche se tap karo)", UDim2.fromOffset(12, 30), UDim2.new(1, -24, 0, 34))
+
+	-- players list
+	local c3 = admCard(150, 3)
+	L({ Size = UDim2.new(1, -24, 0, 16), Position = UDim2.fromOffset(12, 6), Text = "👥 Online players (tap to select)", Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left }, c3)
+	U.plList = new("ScrollingFrame", {
+		Size = UDim2.new(1, -16, 0, 116), Position = UDim2.fromOffset(8, 28), BackgroundTransparency = 1, BorderSizePixel = 0,
+		ScrollBarThickness = 3, ScrollBarImageColor3 = C.accent, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	}, c3)
+	new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, U.plList)
+
+	-- actions grid
+	U.actCard = admCard(120, 4)
+	new("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10) }, U.actCard)
+	new("UIGridLayout", { CellSize = UDim2.new(0.5, -4, 0, 32), CellPadding = UDim2.fromOffset(8, 6), SortOrder = Enum.SortOrder.LayoutOrder }, U.actCard)
+
+	local function act(txt, ord, color, ownerOnly, fn)
+		local b = makeButton(U.actCard, { Text = txt, BackgroundColor3 = color, TextSize = 11, LayoutOrder = ord }, 8)
+		b.MouseButton1Click:Connect(fn)
+		table.insert(U.actBtns, { b = b, ownerOnly = ownerOnly })
+		return b
+	end
+	local function simple(actName)
+		return function()
+			local t = resolveTarget()
+			if t then sendCmd(actName, t, "") toast(actName .. " ✔ " .. t, C.accent) end
+		end
+	end
+	-- ban needs a 2nd tap
+	local banArmed = false
+	local banBtn
+	banBtn = act("🚫 Ban", 1, C.red, true, function()
+		if not banArmed then
+			banArmed = true
+			banBtn.Text = "Tap again!"
+			task.delay(3, function() banArmed = false banBtn.Text = "🚫 Ban" end)
+			return
+		end
+		banArmed = false
+		banBtn.Text = "🚫 Ban"
+		simple("ban")()
+	end)
+	act("♻ Unban", 2, C.panel2, true, simple("unban"))
+	act("🔇 Mute", 3, C.panel2, false, simple("mute"))
+	act("🔊 Unmute", 4, C.panel2, false, simple("unmute"))
+	act("👢 Kick from gang", 5, C.panel2, false, simple("kick"))
+	act("🛡 Make Admin", 6, C.accent, true, simple("admin"))
+	act("❌ Remove Admin", 7, C.panel2, true, simple("unadmin"))
+
+	-- announce
+	local c5 = admCard(80, 5)
+	L({ Size = UDim2.new(1, -24, 0, 16), Position = UDim2.fromOffset(12, 6), Text = "📢 Announcement (sab ko dikhega)", Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left }, c5)
+	U.annBox = admBox(c5, "Message likho...", UDim2.fromOffset(12, 30), UDim2.new(1, -92, 0, 36))
+	local annBtn = makeButton(c5, { Size = UDim2.fromOffset(64, 36), Position = UDim2.new(1, -76, 0, 30), BackgroundColor3 = C.accent, Text = "Send", TextSize = 12 }, 8)
+	annBtn.MouseButton1Click:Connect(function()
+		local t = string.match(U.annBox.Text, "^%s*(.-)%s*$")
+		if t == "" then toast("Message khali hai", C.red) return end
+		t = t:gsub("|", "/")
+		sendCmd("announce", "-", string.sub(t, 1, 100))
+		U.annBox.Text = ""
+	end)
+
+	-- gang tools (owner)
+	U.gtCard = admCard(122, 6)
+	L({ Size = UDim2.new(1, -24, 0, 16), Position = UDim2.fromOffset(12, 6), Text = "🏆 Gang tools (owner)", Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left }, U.gtCard)
+	U.gtName = admBox(U.gtCard, "Gang name", UDim2.fromOffset(12, 28), UDim2.new(0.6, -16, 0, 32))
+	U.gtPts = admBox(U.gtCard, "Points", UDim2.new(0.6, 0, 0, 28), UDim2.new(0.4, -12, 0, 32))
+	local sp = makeButton(U.gtCard, { Size = UDim2.new(0.5, -16, 0, 32), Position = UDim2.fromOffset(12, 72), BackgroundColor3 = C.accent, Text = "Set Points", TextSize = 11 }, 8)
+	local dg = makeButton(U.gtCard, { Size = UDim2.new(0.5, -16, 0, 32), Position = UDim2.new(0.5, 4, 0, 72), BackgroundColor3 = C.red, Text = "Delete Gang", TextSize = 11 }, 8)
+	local function gname()
+		local n = string.match(U.gtName.Text, "^%s*(.-)%s*$")
+		if gangs[n] then return n end
+		for existing in pairs(gangs) do
+			if existing:lower() == n:lower() then return existing end
+		end
+		toast("Gang nahi mili", C.red)
+		return nil
+	end
+	sp.MouseButton1Click:Connect(function()
+		local n, p = gname(), tonumber(U.gtPts.Text)
+		if n and p then sendCmd("setpts", n, tostring(math.floor(p))) toast("Points set ✔", C.green)
+		elseif n then toast("Points number likho", C.red) end
+	end)
+	local dgArmed = false
+	dg.MouseButton1Click:Connect(function()
+		if not dgArmed then
+			dgArmed = true
+			dg.Text = "Tap again!"
+			task.delay(3, function() dgArmed = false dg.Text = "Delete Gang" end)
+			return
+		end
+		dgArmed = false
+		dg.Text = "Delete Gang"
+		local n = gname()
+		if n then sendCmd("delgang", n, "") toast("Gang deleted", C.red) end
+	end)
+
+	-- lists
+	local c7 = F({ Size = UDim2.new(1, -4, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = C.panel, LayoutOrder = 7 }, U.adm)
+	corner(c7, 12)
+	new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12), PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10) }, c7)
+	U.admLists = L({ Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, TextSize = 11, TextColor3 = C.sub, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top }, c7)
+end
+
+function refreshAdmin()
+	if not uiAlive or not U.admRole then return end
+	local owner = isOwner(player.Name)
+	U.admRole.Text = owner and "👑 OWNER PANEL" or "🛡 ADMIN PANEL"
+	U.admRole.TextColor3 = owner and C.gold or C.accent2
+
+	local function cnt(t) local n = 0 for _ in pairs(t) do n += 1 end return n end
+	U.admStats.Text = "Admins: " .. cnt(admins) .. "   •   Banned: " .. cnt(banned) .. "   •   Muted: " .. cnt(muted)
+
+	-- action buttons visibility + grid height
+	local visible = 0
+	for _, a in ipairs(U.actBtns) do
+		a.b.Visible = (not a.ownerOnly) or owner
+		if a.b.Visible then visible += 1 end
+	end
+	U.actCard.Size = UDim2.new(1, -4, 0, math.ceil(visible / 2) * 38 + 14)
+	U.gtCard.Visible = owner
+
+	-- players
+	for _, c in ipairs(U.plList:GetChildren()) do
+		if c:IsA("GuiObject") then c:Destroy() end
+	end
+	for i, p in ipairs(Players:GetPlayers()) do
+		local row = new("TextButton", { Size = UDim2.new(1, -4, 0, 30), BackgroundColor3 = C.panel2, BorderSizePixel = 0, Text = "", AutoButtonColor = true, LayoutOrder = i }, U.plList)
+		corner(row, 8)
+		local av = F({ Position = UDim2.fromOffset(4, 3), Size = UDim2.fromOffset(24, 24), BackgroundColor3 = hueFor(p.Name) }, row)
+		corner(av, 12)
+		local img = new("ImageLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ImageTransparency = 1 }, av)
+		corner(img, 12)
+		getThumb(p.Name, function(url)
+			if img.Parent then img.Image = url tween(img, 0.3, { ImageTransparency = 0 }) end
+		end)
+		local tags = (isOwner(p.Name) and " 👑" or "") .. (admins[p.Name] and " 🛡" or "") .. (banned[p.Name] and " 🚫" or "") .. (muted[p.Name] and " 🔇" or "")
+		L({ Position = UDim2.fromOffset(34, 0), Size = UDim2.new(1, -40, 1, 0), Text = p.Name .. tags, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd }, row)
+		row.MouseButton1Click:Connect(function()
+			U.tgtBox.Text = p.Name
+			toast("Selected: " .. p.Name, C.accent)
+		end)
+	end
+
+	local function join(set)
+		local l = listOf(set)
+		return #l > 0 and table.concat(l, ", ") or "-"
+	end
+	U.admLists.Text = "🛡 Admins: " .. join(admins) .. "\n\n🚫 Banned: " .. join(banned) .. "\n\n🔇 Muted: " .. join(muted)
+end
+
+----------------------------------------------------------------
+-- VIEW SWITCHING + TABS
+----------------------------------------------------------------
+function layoutTabs()
+	local n = isAdmin(player.Name) and 3 or 2
+	U.tabN = n
+	local tabs = { U.chatTab, U.gangTab, U.adminTab }
+	for i, t in ipairs(tabs) do
+		t.Visible = i <= n
+		t.Size = UDim2.new(1 / n, 0, 1, 0)
+		t.Position = UDim2.new((i - 1) / n, 0, 0, 0)
+	end
+	U.tabInd.Size = UDim2.new(1 / n, -4, 1, -4)
+	if n == 2 and currentView == "admin" then
+		showView("chat")
+		return
+	end
+	local idx = (currentView == "chat") and 1 or (currentView == "admin" and 3 or 2)
+	U.tabInd.Position = UDim2.new((idx - 1) / n, 2, 0, 2)
+end
+
+function showView(name)
+	currentView = name
+	for n, v in pairs(U.views) do
+		if n == name then
+			v.Visible = true
+			v.GroupTransparency = 1
+			tween(v, 0.25, { GroupTransparency = 0 })
+		else
+			v.Visible = false
+		end
+	end
+	local showInput = (name == "chat" or name == "gangChat")
+	U.inputBar.Visible = showInput
+	U.content.Size = showInput and UDim2.new(1, -16, 1, -146) or UDim2.new(1, -16, 1, -98)
+
+	local idx = (name == "chat") and 1 or (name == "admin" and 3 or 2)
+	tween(U.tabInd, 0.3, { Position = UDim2.new((idx - 1) / U.tabN, 2, 0, 2) }, Enum.EasingStyle.Quint)
+	tween(U.chatTab, 0.2, { TextColor3 = idx == 1 and C.text or C.sub })
+	tween(U.gangTab, 0.2, { TextColor3 = idx == 2 and C.text or C.sub })
+	tween(U.adminTab, 0.2, { TextColor3 = idx == 3 and C.text or C.sub })
+
+	if name == "gangChat" then
+		U.inputBox.PlaceholderText = "Message your gang..."
+		U.gChatTitle.Text = "🔒 " .. (myGang() or "GANG")
+	else
+		U.inputBox.PlaceholderText = "Message everyone..."
+	end
+	if name == "admin" then refreshAdmin() end
+end
+
+----------------------------------------------------------------
+-- RANKING + LEADERBOARD
+----------------------------------------------------------------
+local function ranking()
+	local list = {}
+	for name, g in pairs(gangs) do
+		table.insert(list, { name = name, g = g, n = countMembers(g), pts = g.points })
+	end
+	table.sort(list, function(a, b)
+		if a.pts ~= b.pts then return a.pts > b.pts end
+		if a.n ~= b.n then return a.n > b.n end
+		return a.name < b.name
+	end)
+	return list
+end
+
+local STYLE = {
+	[1] = { c1 = C.gold, c2 = Color3.fromRGB(255, 120, 20), bg1 = Color3.fromRGB(78, 56, 8), bg2 = Color3.fromRGB(34, 20, 4), h = 66, thick = 2, medal = "👑" },
+	[2] = { c1 = C.silver, c2 = Color3.fromRGB(120, 140, 175), bg1 = Color3.fromRGB(52, 58, 76), bg2 = Color3.fromRGB(24, 26, 40), h = 58, thick = 1.6, medal = "🥈" },
+	[3] = { c1 = C.bronze, c2 = Color3.fromRGB(120, 60, 20), bg1 = Color3.fromRGB(66, 38, 18), bg2 = Color3.fromRGB(30, 18, 12), h = 54, thick = 1.4, medal = "🥉" },
+}
+
+local function shimmer(parent, h, period, delay)
+	local s = F({
+		AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(-0.2, 0, 0.5, 0), Size = UDim2.fromOffset(26, h + 30),
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.84, Rotation = 20, ZIndex = 5,
+	}, parent)
+	loopTween(rowTweens, s, period, { Position = UDim2.new(1.2, 0, 0.5, 0) }, Enum.EasingStyle.Sine, false, delay)
+end
+
+local function buildRow(i, e)
+	local st = STYLE[i]
+	local h = st and st.h or 50
+	local mine = (e.name == myGang())
+	local inGang = myGang() ~= nil
+
+	local f = F({ Size = UDim2.new(1, -4, 0, h), BackgroundColor3 = st and Color3.new(1, 1, 1) or C.panel, LayoutOrder = i, ClipsDescendants = true }, U.gangList)
+	corner(f, 12)
+
+	if st then
+		local bgG = new("UIGradient", { Color = ColorSequence.new(st.bg1, st.bg2), Rotation = 20 }, f)
+		local stroke = new("UIStroke", { Thickness = st.thick, Color = Color3.new(1, 1, 1) }, f)
+		local sg = gradient3(stroke, st.c1, st.c2, st.c1, 0)
+		if i == 1 then
+			loopTween(rowTweens, sg, 2.2, { Rotation = 360 })
+			loopTween(rowTweens, stroke, 0.8, { Thickness = 3.6 }, Enum.EasingStyle.Sine, true)
+			loopTween(rowTweens, bgG, 6, { Rotation = 380 })
+		elseif i == 2 then
+			loopTween(rowTweens, sg, 5, { Rotation = 360 })
+			loopTween(rowTweens, stroke, 1.4, { Thickness = 2.6 }, Enum.EasingStyle.Sine, true)
+		else
+			loopTween(rowTweens, stroke, 1.8, { Thickness = 2.4 }, Enum.EasingStyle.Sine, true)
+		end
+	elseif mine then
+		new("UIStroke", { Thickness = 1.4, Color = C.green, Transparency = 0.2 }, f)
+	end
+
+	local badge = L({
+		AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Size = UDim2.fromOffset(32, 32),
+		Text = st and st.medal or ("#" .. i), Font = Enum.Font.GothamBlack, TextSize = st and (i == 1 and 26 or 22) or 13,
+		TextColor3 = st and Color3.new(1, 1, 1) or C.sub, ZIndex = 3,
+	}, f)
+	if i == 1 then loopTween(rowTweens, badge, 0.7, { Position = UDim2.new(0, 8, 0.5, -4) }, Enum.EasingStyle.Sine, true) end
+
+	local nameLbl = L({
+		Position = UDim2.fromOffset(46, st and 9 or 8), Size = UDim2.new(1, -140, 0, 18), Text = e.name, Font = Enum.Font.GothamBlack,
+		TextSize = i == 1 and 15 or 13, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd,
+		TextColor3 = st and Color3.new(1, 1, 1) or C.accent3, ZIndex = 3,
+	}, f)
+	if i == 1 then
+		loopTween(rowTweens, gradient3(nameLbl, C.gold, Color3.new(1, 1, 1), C.gold, 0), 2.6, { Rotation = 360 })
+	elseif i == 2 then
+		gradient(nameLbl, C.silver, Color3.new(1, 1, 1), 0)
+	elseif i == 3 then
+		gradient(nameLbl, Color3.fromRGB(255, 190, 130), C.bronze, 0)
+	end
+
+	L({
+		Position = UDim2.fromOffset(46, st and 30 or 28), Size = UDim2.new(1, -140, 0, 14), Text = "👥 " .. e.n .. "  •  👑 " .. e.g.owner,
+		TextSize = 10, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd,
+		TextColor3 = st and Color3.fromRGB(215, 220, 235) or C.sub, ZIndex = 3,
+	}, f)
+
+	L({
+		AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, st and 9 or 8), Size = UDim2.fromOffset(84, 18), Text = "⭐ " .. e.pts,
+		Font = Enum.Font.GothamBlack, TextSize = i == 1 and 15 or 13, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = st and st.c1 or C.gold, ZIndex = 3,
+	}, f)
+
+	if mine then
+		L({ AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -7), Size = UDim2.fromOffset(80, 16), Text = "● YOUR GANG", Font = Enum.Font.GothamBold, TextSize = 9, TextColor3 = C.green, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 3 }, f)
+	elseif not inGang then
+		local jb = makeButton(f, { AnchorPoint = Vector2.new(1, 1), Size = UDim2.fromOffset(56, 22), Position = UDim2.new(1, -10, 1, -6), BackgroundColor3 = C.accent, Text = "Join", TextSize = 11, ZIndex = 6 }, 8)
+		jb.MouseButton1Click:Connect(function()
+			if myGang() then toast("Leave your current gang first", C.red) return end
+			applyJoin(player.Name, e.name, e.g.owner)
+			queueSend(TAG .. "JOIN|" .. e.name .. "|" .. e.g.owner)
+			doCheckin()
+			toast("Joined " .. e.name .. " ✅", C.green)
+			refreshGangUI()
+			showView("gangInfo")
+		end)
+	end
+
+	if i == 1 then
+		for k = 1, 3 do
+			local sp = L({
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.3 + k * 0.17, 0, 0.2 + (k % 2) * 0.55, 0),
+				Size = UDim2.fromOffset(14, 14), Text = "✨", TextSize = 11, TextTransparency = 0.9, ZIndex = 4,
+			}, f)
+			loopTween(rowTweens, sp, 0.7 + k * 0.25, { TextTransparency = 0.1 }, Enum.EasingStyle.Sine, true, k * 0.2)
+		end
+		shimmer(f, h, 1.0, 1.1)
+	elseif i == 2 then
+		shimmer(f, h, 1.3, 2.8)
+	end
+end
+
+local function resetText()
+	local left = 86400 - (nowTime() % 86400)
+	return math.floor(left / 3600) .. "h " .. math.floor((left % 3600) / 60) .. "m"
+end
+
+local function updateInfo()
+	local mine = myGang()
+	local g = mine and gangs[mine]
+	if not (mine and g) then return end
+
+	U.infoName.Text = mine
+	U.infoOwner.Text = "👑 Owner: " .. g.owner
+	U.infoPoints.Text = "⭐ " .. g.points .. " Points"
+
+	local rank
+	for idx, e in ipairs(ranking()) do
+		if e.name == mine then rank = idx break end
+	end
+	U.rankPill.Text = "🏆 #" .. (rank or "-")
+	local rs = rank and STYLE[rank]
+	U.rankPill.BackgroundColor3 = rs and rs.bg1 or C.panel2
+	U.rankPill.TextColor3 = rs and rs.c1 or C.text
+
+	local d = dayNow()
+	local total, checked = countMembers(g), 0
+	if g.day == d then
+		for m in pairs(g.today) do
+			if g.members[m] then checked += 1 end
+		end
+	end
+	U.todayCount.Text = checked .. "/" .. total
+	tween(U.todayFill, 0.4, { Size = UDim2.new(total > 0 and math.min(1, checked / total) or 0, 0, 1, 0) })
+	U.todayNote.Text = "+1 point per member jo aaj online aaye • Reset in " .. resetText() .. " (00:00 UTC)"
+
+	local lines = { "<b>Members (" .. total .. ")</b>" }
+	for _, m in ipairs(listOf(g.members)) do
+		local on = Players:FindFirstChild(m) ~= nil
+		local mark = on and '<font color="#3cc878">●</font>' or '<font color="#5a6a88">●</font>'
+		local crown = (m == g.owner) and " 👑" or ""
+		local chk = (g.day == d and g.today[m]) and '  <font color="#ffd54a">✔ today</font>' or ""
+		table.insert(lines, mark .. " " .. m .. crown .. chk)
+	end
+	U.infoMembers.Text = table.concat(lines, "\n")
+
+	local isOwnerOfGang = (g.owner == player.Name)
+	U.deleteBtn.Visible = isOwnerOfGang
+	U.leaveBtn.Visible = not isOwnerOfGang
+end
+
+function refreshGangUI()
+	cancelAll(rowTweens)
+	clearScroll(U.gangList)
+	local list = ranking()
+	if #list == 0 then
+		L({ Size = UDim2.new(1, 0, 0, 50), Text = "No gangs yet.\nCreate the first one!", TextColor3 = C.sub }, U.gangList)
+	end
+	for i, e in ipairs(list) do buildRow(i, e) end
+	U.topBtn.Text = myGang() and "⬅  BACK TO MY GANG" or "➕  CREATE NEW GANG"
+	updateInfo()
+	if (currentView == "gangInfo" or currentView == "gangChat") and not myGang() then showView("gangHome") end
+end
+
+local refreshToken = 0
+function requestRefresh()
+	refreshToken += 1
+	local t = refreshToken
+	task.delay(0.2, function()
+		if t == refreshToken and uiAlive then
+			refreshGangUI()
+			if currentView == "admin" then refreshAdmin() end
+		end
+	end)
+end
+
+----------------------------------------------------------------
+-- STICKERS  (emoji / word / image decals)   chat message format: "~S:<key>"
+-- Is block ko "BUTTON WIRING" se pehle paste karna hai
+----------------------------------------------------------------
+local STICKER_PACKS = {
+	{ name = "😀", items = {} },
+	{ name = "💬", items = {} },
+	{ name = "🐱", items = {} },
+	{ name = "🐒", items = {} },
+	{ name = "🌸", items = {} },
+}
+local STICKERS = {} -- whitelist: sirf yehi keys accept hoti hain
+
+local function addSticker(pack, key, data)
+	data.k = key
+	STICKERS[key] = data
+	table.insert(STICKER_PACKS[pack].items, data)
+end
+
+-- 1) emoji stickers
+for i, e in ipairs({ "🔥", "💀", "😂", "😎", "🥵", "🥹", "😭", "🤡", "👑", "💯", "❤️", "😈", "🙏", "👀", "🫡", "😴", "🤬", "🥶", "🤯", "💸", "🎉", "🗿", "🍕", "🤝" }) do
+	addSticker(1, "e" .. i, { t = e })
+end
+
+-- 2) word stickers (colored pills)
+for i, w in ipairs({
+	{ "W 🏆", Color3.fromRGB(255, 200, 40), Color3.fromRGB(255, 120, 20) },
+	{ "L 💀", Color3.fromRGB(230, 60, 80), Color3.fromRGB(110, 10, 40) },
+	{ "GG", Color3.fromRGB(60, 220, 140), Color3.fromRGB(0, 170, 220) },
+	{ "NOOB 🤡", Color3.fromRGB(160, 90, 255), Color3.fromRGB(90, 40, 200) },
+	{ "LETS GO 🚀", Color3.fromRGB(0, 200, 255), Color3.fromRGB(36, 100, 255) },
+	{ "SUS 👀", Color3.fromRGB(255, 80, 120), Color3.fromRGB(180, 20, 70) },
+	{ "BRO 💀", Color3.fromRGB(90, 100, 120), Color3.fromRGB(30, 36, 56) },
+	{ "OP 😎", Color3.fromRGB(255, 120, 200), Color3.fromRGB(150, 60, 255) },
+	{ "RIP 🪦", Color3.fromRGB(150, 160, 175), Color3.fromRGB(60, 66, 84) },
+	{ "LOL 😂", Color3.fromRGB(255, 220, 60), Color3.fromRGB(120, 200, 60) },
+	{ "CRY 😭", Color3.fromRGB(80, 170, 255), Color3.fromRGB(30, 70, 190) },
+	{ "SIGMA 🗿", Color3.fromRGB(120, 140, 170), Color3.fromRGB(40, 50, 80) },
+}) do
+	addSticker(2, "w" .. i, { txt = w[1], c1 = w[2], c2 = w[3] })
+end
+
+-- 3) image stickers (Roblox decal IDs)
+local IMG_STICKERS = {
+	{ 3, "c1", 73002367912362 },   -- cat + money
+	{ 3, "c2", 71999030813587 },   -- cat + flower
+	{ 3, "c3", 133251082112509 },  -- big-eyed goober
+	{ 3, "c4", 94766951507843 },   -- sunglasses goober
+	{ 3, "c5", 115744147858434 },  -- tired goober on phone
+	{ 3, "c6", 70504108674492 },   -- puddle cat
+	{ 4, "m1", 138012757949307 },  -- monkey
+	{ 4, "m2", 16850598713 },      -- crying cat
+	{ 5, "a1", 115867520715352 },
+	{ 5, "a2", 121463076333232 },
+	{ 5, "a3", 90859222824831 },
+	{ 5, "a4", 94448808776110 },
+	{ 5, "a5", 88870742770869 },
+	{ 5, "a6", 86236538164868 },
+	{ 4, "m3", 126447901821034 },
+	{ 4, "m4", 110248026065657 },
+	{ 4, "m5", 133012698925337 },
+	{ 4, "m6", 71254500503266 },
+}
+for _, s in ipairs(IMG_STICKERS) do
+	addSticker(s[1], s[2], { id = s[3] })
+end
+
+-- decal id != image id, isliye pehle thumbnail (rbxthumb) try karte hain, na chale to rbxassetid
+local function loadStickerImage(img, id)
+	img.Image = "rbxthumb://type=Asset&id=" .. id .. "&w=420&h=420"
+	task.delay(4, function()
+		if img.Parent and not img.IsLoaded then
+			img.Image = "rbxassetid://" .. id
+		end
+	end)
+end
+
+-- builds the visual of one sticker inside `parent`; px = width in pixels
+local function stickerVisual(parent, it, px)
+	local h = it.txt and math.floor(px * 0.6) or px
+	local box = F({ Size = UDim2.fromOffset(px, h), BackgroundTransparency = 1 }, parent)
+	if it.t then
+		L({ Size = UDim2.fromScale(1, 1), Text = it.t, TextSize = math.floor(px * 0.72) }, box)
+	elseif it.txt then
+		local pill = F({ Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), Rotation = -4 }, box)
+		corner(pill, math.max(6, math.floor(px * 0.16)))
+		new("UIGradient", { Color = ColorSequence.new(it.c1, it.c2), Rotation = 20 }, pill)
+		new("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 2 }, pill)
+		local lb = L({ Size = UDim2.new(1, -8, 1, -4), Position = UDim2.fromOffset(4, 2), Text = it.txt, Font = Enum.Font.GothamBlack, TextScaled = true }, pill)
+		new("UITextSizeConstraint", { MaxTextSize = math.max(10, math.floor(px * 0.3)) }, lb)
+	else
+		local card = F({ Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1) }, box)
+		corner(card, math.max(8, math.floor(px * 0.13)))
+		local img = new("ImageLabel", {
+			Size = UDim2.new(1, -6, 1, -6), Position = UDim2.fromOffset(3, 3), BackgroundColor3 = Color3.fromRGB(232, 236, 245),
+			BorderSizePixel = 0, ScaleType = Enum.ScaleType.Crop,
+		}, card)
+		corner(img, math.max(6, math.floor(px * 0.1)))
+		loadStickerImage(img, it.id)
+	end
+	return box
+end
+
+-- sticker message row (avatar + name + big sticker with pop animation)
+local function addStickerRow(scroll, name, it)
+	order += 1
+	local kids = 0
+	for _, c in ipairs(scroll:GetChildren()) do
+		if c:IsA("GuiObject") then kids += 1 end
+	end
+	if kids >= 80 then
+		for _, c in ipairs(scroll:GetChildren()) do
+			if c:IsA("GuiObject") then c:Destroy() break end
+		end
+	end
+
+	local owner, adm = isOwner(name), isAdmin(name)
+	local row = F({ Size = UDim2.new(1, -6, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = order }, scroll)
+	new("UISizeConstraint", { MinSize = Vector2.new(0, 36) }, row)
+
+	local dp = F({ Size = UDim2.fromOffset(32, 32), BackgroundColor3 = hueFor(name) }, row)
+	corner(dp, 16)
+	if owner or adm then new("UIStroke", { Color = owner and C.gold or C.accent2, Thickness = 1.8 }, dp) end
+	L({ Size = UDim2.fromScale(1, 1), Text = string.upper(string.sub(name, 1, 1)), Font = Enum.Font.GothamBlack, TextSize = 15 }, dp)
+	local av = new("ImageLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ImageTransparency = 1, ZIndex = 2 }, dp)
+	corner(av, 16)
+	getThumb(name, function(url)
+		if av.Parent then
+			av.Image = url
+			tween(av, 0.3, { ImageTransparency = 0 })
+		end
+	end)
+
+	local body = F({ Size = UDim2.new(1, -42, 0, 0), Position = UDim2.fromOffset(42, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 }, row)
+	new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, body)
+	local tagTxt = owner and "  👑 OWNER" or (adm and "  🛡 ADMIN" or "")
+	L({
+		Size = UDim2.new(1, 0, 0, 13), Text = name .. tagTxt, Font = Enum.Font.GothamBold, TextSize = 11,
+		TextColor3 = owner and C.gold or (adm and C.accent2 or C.accent3), TextXAlignment = Enum.TextXAlignment.Left, LayoutOrder = 1,
+	}, body)
+
+	local px = it.id and 104 or (it.txt and 118 or 66)
+	local vis = stickerVisual(body, it, px)
+	vis.LayoutOrder = 2
+
+	-- pop + wobble
+	local sc = new("UIScale", { Scale = 0 }, vis)
+	vis.Rotation = -14
+	tween(sc, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
+	tween(vis, 0.8, { Rotation = 0 }, Enum.EasingStyle.Elastic)
+
+	-- emoji burst
+	if it.t then
+		for i = 1, 5 do
+			local fl = L({
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(math.random(10, 90) / 100, 0, 0.6, 0),
+				Size = UDim2.fromOffset(20, 20), Text = it.t, TextSize = 14, ZIndex = 5,
+			}, vis)
+			tween(fl, 0.9 + i * 0.15, { Position = UDim2.new(fl.Position.X.Scale, 0, -0.7, 0), TextTransparency = 1 })
+			task.delay(2.2, function() if fl.Parent then fl:Destroy() end end)
+		end
+	end
+	scrollDown(scroll)
+end
+
+-- intercept sticker messages (works for chat + gang chat, incoming and outgoing)
+local baseAddMessage = addMessage
+function addMessage(scroll, name, text, isSystem)
+	if not isSystem and type(text) == "string" and string.sub(text, 1, 3) == "~S:" then
+		local it = STICKERS[string.sub(text, 4)]
+		if it and scroll and scroll.Parent then addStickerRow(scroll, name, it) end
+		return
+	end
+	return baseAddMessage(scroll, name, text, isSystem)
+end
+
+----------------------------------------------------------------
+-- STICKER TRAY (button next to the message box)
+----------------------------------------------------------------
+U.inputBox.Size = UDim2.new(1, -96, 1, 0)
+U.stickerBtn = makeButton(U.inputBar, { Size = UDim2.fromOffset(32, 32), Position = UDim2.new(1, -75, 0.5, -16), BackgroundColor3 = C.panel2, Text = "😀", TextSize = 16 }, 16)
+
+U.tray = F({ AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 8, 1, -56), Size = UDim2.new(1, -16, 0, 170), BackgroundColor3 = C.panel, Visible = false, ZIndex = 30 }, U.main)
+corner(U.tray, 14)
+new("UIStroke", { Color = C.accent, Thickness = 1.4 }, U.tray)
+local trayScale = new("UIScale", { Scale = 0.9 }, U.tray)
+local trayTabs = F({ Size = UDim2.new(1, -12, 0, 28), Position = UDim2.fromOffset(6, 6), BackgroundTransparency = 1 }, U.tray)
+new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }, trayTabs)
+local trayGrid = new("ScrollingFrame", {
+	Size = UDim2.new(1, -12, 1, -42), Position = UDim2.fromOffset(6, 38), BackgroundTransparency = 1, BorderSizePixel = 0,
+	ScrollBarThickness = 3, ScrollBarImageColor3 = C.accent, CanvasSize = UDim2.new(), AutomaticCanvasSize = Enum.AutomaticSize.Y,
+}, U.tray)
+new("UIGridLayout", { CellSize = UDim2.fromOffset(64, 64), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder }, trayGrid)
+
+local trayOpen = false
+local lastSticker = 0
+local packTabBtns = {}
+
+local function closeTray()
+	if not trayOpen then return end
+	trayOpen = false
+	tween(trayScale, 0.15, { Scale = 0.9 })
+	task.delay(0.16, function() if not trayOpen then U.tray.Visible = false end end)
+end
+
+local function sendSticker(key)
+	if muted[player.Name] then toast("🔇 You are muted", C.red) return end
+	if tick() - lastSticker < 1.2 then toast("Thoda slow 😅", C.red) return end
+	local txt = "~S:" .. key
+	if currentView == "gangChat" and myGang() then
+		lastSticker = tick()
+		addMessage(U.gangScroll, player.Name, txt)
+		queueSend(TAG .. "G|" .. myGang() .. "|" .. txt)
+	elseif currentView == "chat" then
+		lastSticker = tick()
+		addMessage(U.chatScroll, player.Name, txt)
+		queueSend(TAG .. "C|" .. txt)
+	else
+		return
+	end
+	closeTray()
+end
+
+local function showPack(idx)
+	for i, b in ipairs(packTabBtns) do
+		tween(b, 0.15, { BackgroundColor3 = (i == idx) and C.accent or C.panel2 })
+	end
+	for _, c in ipairs(trayGrid:GetChildren()) do
+		if c:IsA("GuiObject") then c:Destroy() end
+	end
+	trayGrid.CanvasPosition = Vector2.new(0, 0)
+	for i, it in ipairs(STICKER_PACKS[idx].items) do
+		local cell = new("TextButton", { BackgroundColor3 = C.panel2, BorderSizePixel = 0, Text = "", AutoButtonColor = true, LayoutOrder = i }, trayGrid)
+		corner(cell, 12)
+		local vis = stickerVisual(cell, it, 52)
+		vis.AnchorPoint = Vector2.new(0.5, 0.5)
+		vis.Position = UDim2.fromScale(0.5, 0.5)
+		cell.MouseButton1Click:Connect(function() sendSticker(it.k) end)
+	end
+end
+
+for i, p in ipairs(STICKER_PACKS) do
+	local b = makeButton(trayTabs, { Size = UDim2.fromOffset(0, 28), AutomaticSize = Enum.AutomaticSize.X, BackgroundColor3 = C.panel2, Text = p.name, TextSize = 15, LayoutOrder = i }, 8)
+	new("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) }, b)
+	b.MouseButton1Click:Connect(function() showPack(i) end)
+	packTabBtns[i] = b
+end
+
+local trayBuilt = false
+U.stickerBtn.MouseButton1Click:Connect(function()
+	if currentView ~= "chat" and currentView ~= "gangChat" then return end
+	if trayOpen then closeTray() return end
+	if not trayBuilt then
+		trayBuilt = true
+		showPack(1)
+	end
+	trayOpen = true
+	U.tray.Visible = true
+	trayScale.Scale = 0.9
+	tween(trayScale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+end)
+
+-- tray band karo jab chat se bahar jao
+local baseShowView = showView
+function showView(name)
+	if name ~= "chat" and name ~= "gangChat" then closeTray() end
+	return baseShowView(name)
+end
+
+----------------------------------------------------------------
+-- BUTTON WIRING
+----------------------------------------------------------------
+local function confirmButton(btn, label, action)
+	local armed = false
+	btn.MouseButton1Click:Connect(function()
+		if armed then armed = false btn.Text = label action() return end
+		armed = true
+		btn.Text = "Tap again to confirm"
+		task.delay(3, function() if armed then armed = false btn.Text = label end end)
+	end)
+end
+
+confirmButton(U.leaveBtn, "Leave Gang", function()
+	local gn = myGang()
+	if not gn then return end
+	queueSend(TAG .. "LEAVE|" .. gn)
+	removeMember(player.Name)
+	clearScroll(U.gangScroll)
+	toast("You left " .. gn, C.red)
+	refreshGangUI()
+	showView("gangHome")
+end)
+confirmButton(U.deleteBtn, "Delete Gang", function()
+	local gn = myGang()
+	local g = gn and gangs[gn]
+	if not g or g.owner ~= player.Name then return end
+	queueSend(TAG .. "DEL|" .. gn)
+	deleteGang(gn)
+	clearScroll(U.gangScroll)
+	toast("Gang deleted", C.red)
+	refreshGangUI()
+	showView("gangHome")
+end)
+
+U.openChatBtn.MouseButton1Click:Connect(function() if myGang() then showView("gangChat") end end)
+U.backBtn.MouseButton1Click:Connect(function() showView("gangInfo") end)
+U.lbBtn.MouseButton1Click:Connect(function() showView("gangHome") end)
+U.topBtn.MouseButton1Click:Connect(function()
+	if myGang() then showView("gangInfo") else openModal() end
+end)
+U.cancelBtn.MouseButton1Click:Connect(closeModal)
+U.createBtn.MouseButton1Click:Connect(function()
+	local name = string.match(U.nameBox.Text, "^%s*(.-)%s*$")
+	if banned[player.Name] then return end
+	if not validGang(name) then toast("Name must be 2-16 letters/numbers", C.red) return end
+	for existing in pairs(gangs) do
+		if string.lower(existing) == string.lower(name) then toast("That gang name already exists", C.red) return end
+	end
+	if myGang() then toast("You are already in a gang", C.red) return end
+	applyJoin(player.Name, name, player.Name)
+	queueSend(TAG .. "JOIN|" .. name .. "|" .. player.Name)
+	doCheckin()
+	closeModal()
+	toast("Gang created 🔥", C.green)
+	refreshGangUI()
+	showView("gangInfo")
+end)
+
+local function sendCurrent()
+	local txt = string.match(U.inputBox.Text, "^%s*(.-)%s*$")
+	if txt == "" then return end
+	if muted[player.Name] then toast("🔇 You are muted", C.red) return end
+	txt = txt:gsub("|", "/")
+	txt = string.sub(txt, 1, MAX_LEN)
+	U.inputBox.Text = ""
+	if currentView == "gangChat" and myGang() then
+		addMessage(U.gangScroll, player.Name, txt)
+		queueSend(TAG .. "G|" .. myGang() .. "|" .. txt)
+	elseif currentView == "chat" then
+		addMessage(U.chatScroll, player.Name, txt)
+		queueSend(TAG .. "C|" .. txt)
+	end
+end
+U.sendBtn.MouseButton1Click:Connect(sendCurrent)
+U.inputBox.FocusLost:Connect(function(enter) if enter then sendCurrent() end end)
+
+U.chatTab.MouseButton1Click:Connect(function()
+	if currentView ~= "chat" then showView("chat") end
+end)
+U.gangTab.MouseButton1Click:Connect(function()
+	if currentView == "chat" or currentView == "admin" then
+		refreshGangUI()
+		showView(myGang() and "gangInfo" or "gangHome")
+	end
+end)
+U.adminTab.MouseButton1Click:Connect(function()
+	if isAdmin(player.Name) and currentView ~= "admin" then showView("admin") end
+end)
+
+----------------------------------------------------------------
+-- FLOATING ICON + WINDOW CONTROLS
+----------------------------------------------------------------
+U.icon = new("TextButton", {
+	AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(46, 46), Position = UDim2.fromScale(0.88, 0.2),
+	BackgroundColor3 = C.bg, Text = "R", TextColor3 = C.accent2, Font = Enum.Font.GothamBlack, TextSize = 24, AutoButtonColor = false, Visible = false,
+}, screenGui)
+corner(U.icon, 23)
+U.iconScale = new("UIScale", { Scale = 0 }, U.icon)
+loopTween(ambient, new("UIStroke", { Color = C.accent2, Thickness = 2 }, U.icon), 1.1, { Thickness = 4 }, Enum.EasingStyle.Sine, true)
+
+local function openMain()
+	U.icon.Visible = false
+	U.holder.Visible = true
+	U.main.Visible = true
+	tween(U.mainScale, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
+end
+local function minimize()
+	tween(U.mainScale, 0.2, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	task.delay(0.22, function()
+		if not uiAlive then return end
+		U.main.Visible = false
+		U.holder.Visible = false
+		U.icon.Visible = true
+		U.iconScale.Scale = 0
+		tween(U.iconScale, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+	end)
+end
+
+function unload()
+	uiAlive = false
+	saveData()
+	for _, c in ipairs(conns) do pcall(function() c:Disconnect() end) end
+	cancelAll(ambient)
+	cancelAll(rowTweens)
+	pcall(function() TextChatService.OnIncomingMessage = nil end)
+	pcall(function() TextChatService.OnBubbleAdded = nil end)
+	if screenGui then screenGui:Destroy() end
+	_G.RyzenxCleanup = nil
+end
+_G.RyzenxCleanup = unload
+
+U.sizeBtn.MouseButton1Click:Connect(function()
+	sizeIdx = sizeIdx % #SIZES + 1
+	applyFit()
+	markDirty()
+	toast("Size: " .. ({ "Small", "Medium", "Large" })[sizeIdx], C.accent)
+end)
+U.minBtn.MouseButton1Click:Connect(minimize)
+U.closeBtn.MouseButton1Click:Connect(function()
+	tween(U.mainScale, 0.25, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	task.delay(0.28, unload)
+end)
+makeDraggable(U.titleBar, U.holder)
+makeDraggable(U.icon, U.icon, openMain)
+
+loopTween(ambient, U.strokeGrad, 6, { Rotation = 360 })
+loopTween(ambient, U.titleGrad, 4, { Rotation = 360 })
+
+-- autosave + day rollover
+go(function()
+	local lastDay, t30 = dayNow(), 0
+	while uiAlive do
+		task.wait(5)
+		if dirty then saveData() end
+		t30 += 5
+		if t30 >= 30 then
+			t30 = 0
+			local d = dayNow()
+			if d ~= lastDay then
+				lastDay = d
+				doCheckin()
+				requestRefresh()
+			else
+				pcall(updateInfo)
+			end
+		end
+	end
+end)
+
+----------------------------------------------------------------
+-- CYBER INTRO  (terminal boot -> blue radial -> wing emblem -> glitch title -> progress)
+----------------------------------------------------------------
+local function runIntro()
+	local tws = {}
+	local g = new("CanvasGroup", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, ZIndex = 100 }, screenGui)
+
+	-- blue radial background (concentric halos)
+	local blue = F({ Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(10, 62, 148), BackgroundTransparency = 1, ZIndex = 101 }, g)
+	local halos = {}
+	for i, d in ipairs({ { 1000, 0.93 }, { 700, 0.88 }, { 440, 0.8 }, { 240, 0.68 } }) do
+		local h = F({
+			AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.47), Size = UDim2.fromOffset(d[1], d[1]),
+			BackgroundColor3 = Color3.fromRGB(45, 185, 240), BackgroundTransparency = 1, ZIndex = 101,
+		}, g)
+		corner(h, d[1])
+		halos[i] = { h, d[2] }
+	end
+
+	-- scanline
+	local scan = F({ Size = UDim2.new(1, 0, 0, 2), Position = UDim2.fromScale(0, -0.05), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.88, ZIndex = 150 }, g)
+	loopTween(tws, scan, 2.8, { Position = UDim2.fromScale(0, 1.05) })
+
+	-- 1) terminal boot
+	local term = L({
+		Size = UDim2.new(1, -30, 1, -30), Position = UDim2.fromOffset(15, 15), Text = "", Font = Enum.Font.Code, TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, RichText = true, ZIndex = 140,
+	}, g)
+	local boot = {
+		{ "OK", "Started " .. BRAND .. " kernel" },
+		{ "OK", "Mounted secure storage" },
+		{ "OK", "Loaded gang database" },
+		{ "OK", "Reached target network.chat" },
+		{ "OK", "Started daily check-in service" },
+		{ "OK", "Started admin / moderation module" },
+		{ "INFO", "Launching interface..." },
+	}
+	local acc = ""
+	for _, b in ipairs(boot) do
+		local col = (b[1] == "OK") and "#4dff9a" or "#4dd2ff"
+		acc = acc .. '<font color="' .. col .. '">[ ' .. b[1] .. ' ]</font> <font color="#cfe8ff">' .. b[2] .. "</font>\n"
+		term.Text = acc
+		task.wait(0.16)
+	end
+	task.wait(0.2)
+
+	-- reveal blue screen
+	tween(g, 0.6, { BackgroundTransparency = 1 })
+	tween(term, 0.5, { TextTransparency = 1 })
+	tween(blue, 0.7, { BackgroundTransparency = 0 })
+	for i, h in ipairs(halos) do
+		tween(h[1], 0.9, { BackgroundTransparency = h[2] })
+		task.delay(1, function()
+			loopTween(tws, h[1], 2.4 + i * 0.3, { BackgroundTransparency = math.min(1, h[2] + 0.07) }, Enum.EasingStyle.Sine, true)
+		end)
+	end
+	task.wait(0.5)
+	term:Destroy()
+
+	-- 2) emblem
+	local ctr = F({ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(320, 300), BackgroundTransparency = 1, ZIndex = 110 }, g)
+	local ctrScale = new("UIScale", {}, ctr)
+	local function fit()
+		local vp = screenGui.AbsoluteSize
+		if vp.X > 0 and vp.Y > 0 then ctrScale.Scale = math.clamp(math.min(vp.Y / 320, vp.X / 340), 0.4, 1.3) end
+	end
+	fit()
+
+	local emb = F({ AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.fromOffset(150, 150), BackgroundTransparency = 1, ZIndex = 111 }, ctr)
+	loopTween(tws, emb, 2, { Position = UDim2.new(0.5, 0, 0, -6) }, Enum.EasingStyle.Sine, true)
+
+	-- ripple rings
+	for i = 1, 3 do
+		local r = F({ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(70, 70), BackgroundTransparency = 1, ZIndex = 111 }, emb)
+		corner(r, 200)
+		local rs = new("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 2, Transparency = 0.35 }, r)
+		loopTween(tws, r, 2.6, { Size = UDim2.fromOffset(260, 260) }, Enum.EasingStyle.Linear, false, i * 0.85 - 0.85)
+		loopTween(tws, rs, 2.6, { Transparency = 1 }, Enum.EasingStyle.Linear, false, i * 0.85 - 0.85)
+	end
+
+	-- wings (original design: tapered spikes fanning out from the core)
+	local wingScales = {}
+	local function spike(side, len, a, py)
+		local rad = math.rad(a)
+		local px = 75 + side * 34
+		local cx = px + side * math.cos(rad) * len / 2
+		local cy = py - math.sin(rad) * len / 2
+		local s = F({
+			AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(cx, cy), Size = UDim2.fromOffset(len, 3),
+			BackgroundColor3 = Color3.fromRGB(3, 8, 22), Rotation = (side < 0) and a or -a, ZIndex = 112,
+		}, emb)
+		new("UIGradient", { Transparency = (side < 0) and NumberSequence.new(1, 0) or NumberSequence.new(0, 1) }, s)
+		local sc = new("UIScale", { Scale = 0 }, s)
+		table.insert(wingScales, sc)
+	end
+	for _, side in ipairs({ -1, 1 }) do
+		spike(side, 104, 5, 82)
+		spike(side, 86, 21, 74)
+		spike(side, 68, 37, 66)
+		spike(side, 50, 53, 58)
+	end
+
+	-- core
+	local core = F({ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(84, 84), BackgroundColor3 = Color3.fromRGB(4, 14, 34), ZIndex = 114 }, emb)
+	corner(core, 42)
+	local cst = new("UIStroke", { Thickness = 3, Color = Color3.new(1, 1, 1) }, core)
+	loopTween(tws, gradient3(cst, C.accent2, Color3.new(1, 1, 1), C.accent, 0), 1.8, { Rotation = 360 })
+	local coreScale = new("UIScale", { Scale = 0 }, core)
+	if LOGO_IMAGE ~= "" then
+		new("ImageLabel", { Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.1, 0.1), BackgroundTransparency = 1, Image = LOGO_IMAGE, ZIndex = 115 }, core)
+	else
+		local r = L({ Size = UDim2.fromScale(1, 1), Text = "R", Font = Enum.Font.GothamBlack, TextSize = 44, ZIndex = 115 }, core)
+		loopTween(tws, gradient(r, C.accent2, Color3.new(1, 1, 1), 45), 3, { Rotation = 405 })
+	end
+
+	tween(coreScale, 0.6, { Scale = 1 }, Enum.EasingStyle.Back)
+	for i, sc in ipairs(wingScales) do
+		task.delay(0.15 + (i % 4) * 0.1, function()
+			tween(sc, 0.5, { Scale = 1 }, Enum.EasingStyle.Back)
+		end)
+	end
+	task.wait(0.7)
+	for _, sc in ipairs(wingScales) do
+		loopTween(tws, sc, 1.3, { Scale = 1.06 }, Enum.EasingStyle.Sine, true)
+	end
+
+	-- 3) glitch title
+	local title = L({ AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 160), Size = UDim2.new(1, 0, 0, 36), Text = "", Font = Enum.Font.GothamBlack, TextSize = 28, ZIndex = 111 }, ctr)
+	gradient(title, Color3.new(1, 1, 1), C.accent2, 0)
+	local target = string.upper(BRAND)
+	local chars = "01#$%&@<>/ABCDEFGHJKLMNPQRSTUVWXYZ"
+	local steps = 18
+	for s = 1, steps do
+		local out = {}
+		local solved = math.floor(s / steps * #target)
+		for i = 1, #target do
+			if i <= solved then
+				out[i] = target:sub(i, i)
+			else
+				local r = math.random(1, #chars)
+				out[i] = chars:sub(r, r)
+			end
+		end
+		title.Text = table.concat(out)
+		task.wait(0.045)
+	end
+	title.Text = target
+
+	local sub = L({ AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 198), Size = UDim2.new(1, 0, 0, 14), Text = "GANG & CHAT SYSTEM  •  " .. VERSION .. "  •  CYBER EDITION", Font = Enum.Font.GothamBold, TextSize = 10, TextColor3 = Color3.fromRGB(190, 235, 255), TextTransparency = 1, ZIndex = 111 }, ctr)
+	tween(sub, 0.5, { TextTransparency = 0 })
+
+	-- 4) progress + terminal status line
+	local track = F({ AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 226), Size = UDim2.fromOffset(240, 4), BackgroundColor3 = Color3.fromRGB(6, 30, 70), ZIndex = 111 }, ctr)
+	corner(track, 2)
+	local fill = F({ Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 112 }, track)
+	corner(fill, 2)
+	gradient(fill, Color3.new(1, 1, 1), C.accent2, 0)
+	new("UIStroke", { Color = C.accent2, Thickness = 1, Transparency = 0.5 }, fill)
+	local pct = L({ AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 236), Size = UDim2.new(1, 0, 0, 18), Text = "0%", Font = Enum.Font.GothamBlack, TextSize = 14, ZIndex = 111 }, ctr)
+	local status = L({ AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 258), Size = UDim2.new(1, 0, 0, 14), Text = "", Font = Enum.Font.Code, TextSize = 11, TextColor3 = Color3.fromRGB(190, 235, 255), ZIndex = 111 }, ctr)
+
+	local phases = {
+		{ 0, "init kernel" }, { 15, "loading modules" }, { 35, "mounting secure storage" },
+		{ 55, "syncing gang database" }, { 75, "building interface" }, { 92, "verifying daily check-in" }, { 100, "access granted" },
+	}
+	local cur = phases[1][2]
+	for i = 0, 100 do
+		for _, p in ipairs(phases) do
+			if i == p[1] then cur = p[2] end
+		end
+		local a = i / 100
+		fill.Size = UDim2.new(a, 0, 1, 0)
+		pct.Text = i .. "%"
+		status.Text = "root@ryzen:~# " .. cur .. ((math.floor(i / 5) % 2 == 0) and " █" or "  ")
+		task.wait(0.012 + 0.016 * (1 - math.sin(a * math.pi)))
+	end
+	status.TextColor3 = C.green
+	task.wait(0.35)
+
+	-- exit
+	tween(ctrScale, 0.6, { Scale = ctrScale.Scale * 1.15 })
+	tween(g, 0.6, { GroupTransparency = 1 })
+	task.wait(0.65)
+	cancelAll(tws)
+	g:Destroy()
+end
+
+----------------------------------------------------------------
+-- BOOT
+----------------------------------------------------------------
+layoutTabs()
+go(function()
+	if banned[player.Name] and not isOwner(player.Name) then
+		lockOut()
+		return
+	end
+	runIntro()
+	refreshGangUI()
+	layoutTabs()
+	showView("chat")
+	openMain()
+
+	task.wait(0.5)
+	local gn = myGang()
+	if gn and gangs[gn] then
+		queueSend(TAG .. "JOIN|" .. gn .. "|" .. gangs[gn].owner)
+		doCheckin()
+		local snap = snapshotMsg(gn)
+		if snap then queueSend(snap) end
+	end
+	queueSend(TAG .. "SYNC")
+end)
+
+end -- main
+
+local ok, err = xpcall(main, handler)
+if not ok then fatal(err) end
