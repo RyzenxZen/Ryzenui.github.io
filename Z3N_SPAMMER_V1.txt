@@ -1,4 +1,4 @@
--- Delta Chat Spam GUI Script (Sonic V1 DST - FIXED RP Name + Real Phonk + Toggle Button)
+-- Delta Chat Spam GUI Script (Z3N V1 - FIXED RP Name + Real Phonk + Toggle Button)
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,9 +21,9 @@ pcall(function()
 end)
 if not guiParent then guiParent = localPlayer:WaitForChild("PlayerGui") end
 
-if guiParent:FindFirstChild("SonicV1SystemGui") then guiParent.SonicV1SystemGui:Destroy() end
-if guiParent:FindFirstChild("SonicLoadingGui") then guiParent.SonicLoadingGui:Destroy() end
-if guiParent:FindFirstChild("SonicToggleGui") then guiParent.SonicToggleGui:Destroy() end
+if guiParent:FindFirstChild("Z3nV1SystemGui") then guiParent.Z3nV1SystemGui:Destroy() end
+if guiParent:FindFirstChild("Z3nLoadingGui") then guiParent.Z3nLoadingGui:Destroy() end
+if guiParent:FindFirstChild("Z3nToggleGui") then guiParent.Z3nToggleGui:Destroy() end
 
 -- Shared Rainbow
 local sharedRainbowColor = Color3.fromRGB(0, 255, 170)
@@ -57,7 +57,7 @@ end
 -- ==========================================
 -- 1. BROOKHAVEN RP NAME + RAINBOW (CORRECT SIGNATURE)
 -- ==========================================
-local NEW_RP_NAME = "🦅SONIC V1 DST🦅"
+local NEW_RP_NAME = "🔥Z3N V1🔥"
 local RE = ReplicatedStorage:WaitForChild("RE", 10)
 if not RE then RE = ReplicatedStorage:FindFirstChild("RE") or ReplicatedStorage:FindFirstChild("Remotes") end
 
@@ -102,7 +102,7 @@ end)
 -- 2. LOADING SCREEN (Habibi sting + Real Phonk)
 -- ==========================================
 local LoadingGui = Instance.new("ScreenGui")
-LoadingGui.Name = "SonicLoadingGui"
+LoadingGui.Name = "Z3nLoadingGui"
 LoadingGui.Parent = guiParent
 LoadingGui.ResetOnSpawn = false
 LoadingGui.IgnoreGuiInset = true
@@ -152,7 +152,7 @@ LoadTitle.BackgroundTransparency = 1
 LoadTitle.Position = UDim2.new(0, 0, 0.15, 0)
 LoadTitle.Size = UDim2.new(1, 0, 0, 40)
 LoadTitle.Font = Enum.Font.GothamBold
-LoadTitle.Text = "🦅SONIC V1 DST🦅"
+LoadTitle.Text = "🔥Z3N V1🔥"
 LoadTitle.TextColor3 = Color3.fromRGB(0, 255, 170)
 LoadTitle.TextSize = 20
 
@@ -162,7 +162,7 @@ LoadStatus.BackgroundTransparency = 1
 LoadStatus.Position = UDim2.new(0, 0, 0.45, 0)
 LoadStatus.Size = UDim2.new(1, 0, 0, 25)
 LoadStatus.Font = Enum.Font.GothamMedium
-LoadStatus.Text = "Loading Sonic V1 Core... PHONK MODE ON"
+LoadStatus.Text = "Loading Z3n V1 Core... PHONK MODE ON"
 LoadStatus.TextColor3 = Color3.fromRGB(200, 200, 200)
 LoadStatus.TextSize = 13
 
@@ -219,13 +219,13 @@ LoadingGui:Destroy()
 -- ==========================================
 -- 3. MAIN GUI
 -- ==========================================
-local SonicV1SystemGui = Instance.new("ScreenGui")
-SonicV1SystemGui.Name = "SonicV1SystemGui"
-SonicV1SystemGui.Parent = guiParent
-SonicV1SystemGui.ResetOnSpawn = false
+local Z3nV1SystemGui = Instance.new("ScreenGui")
+Z3nV1SystemGui.Name = "Z3nV1SystemGui"
+Z3nV1SystemGui.Parent = guiParent
+Z3nV1SystemGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Parent = SonicV1SystemGui
+MainFrame.Parent = Z3nV1SystemGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
 MainFrame.BorderSizePixel = 0
 MainFrame.Position = UDim2.new(0.18, 0, 0.22, 0)
@@ -266,7 +266,7 @@ PatternBox.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
 PatternBox.Position = UDim2.new(0.1, 0, 0.1, 0)
 PatternBox.Size = UDim2.new(0.8, 0, 0, 36)
 PatternBox.Font = Enum.Font.GothamBold
-PatternBox.Text = "///mmm///"
+PatternBox.Text = "///ZZZ///"
 PatternBox.TextColor3 = Color3.fromRGB(255, 100, 150)
 PatternBox.TextSize = 13
 
@@ -309,7 +309,7 @@ TitleLabel.BackgroundTransparency = 1
 TitleLabel.Position = UDim2.new(0.31, 0, 0.05, 0)
 TitleLabel.Size = UDim2.new(0.66, 0, 0, 25)
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.Text = "⚡ SONIC V1 DST 🦅 // SYSTEM CORE"
+TitleLabel.Text = "🗿 Z3N V1 🗿 // SYSTEM CORE"
 TitleLabel.TextColor3 = Color3.fromRGB(255, 170, 0)
 TitleLabel.TextSize = 12
 
@@ -370,7 +370,7 @@ ToggleButton.BackgroundColor3 = Color3.fromRGB(180, 30, 70)
 ToggleButton.Position = UDim2.new(0.31, 0, 0.72, 0)
 ToggleButton.Size = UDim2.new(0.66, 0, 0, 42)
 ToggleButton.Font = Enum.Font.GothamBold
-ToggleButton.Text = "START SONIC SPAMMER"
+ToggleButton.Text = "START Z3N SPAMMER"
 ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 ToggleButton.TextSize = 14
 
@@ -382,7 +382,7 @@ TBCorner.Parent = ToggleButton
 -- 4. FLOATING TOGGLE BUTTON (SHOW / HIDE UI)
 -- ==========================================
 local ToggleGui = Instance.new("ScreenGui")
-ToggleGui.Name = "SonicToggleGui"
+ToggleGui.Name = "Z3nToggleGui"
 ToggleGui.Parent = guiParent
 ToggleGui.ResetOnSpawn = false
 ToggleGui.DisplayOrder = 1000
@@ -392,7 +392,7 @@ FloatingBtn.Parent = ToggleGui
 FloatingBtn.Size = UDim2.new(0, 50, 0, 50)
 FloatingBtn.Position = UDim2.new(0, 20, 0.5, -25)
 FloatingBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
-FloatingBtn.Text = "⚡"
+FloatingBtn.Text = "🗿"
 FloatingBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 FloatingBtn.TextSize = 24
 FloatingBtn.Font = Enum.Font.GothamBold
@@ -487,7 +487,7 @@ ToggleButton.MouseButton1Click:Connect(function()
         ToggleButton.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
         startSpamLoop()
     else
-        ToggleButton.Text = "START SONIC SPAMMER"
+        ToggleButton.Text = "START Z3N SPAMMER"
         ToggleButton.BackgroundColor3 = Color3.fromRGB(180, 30, 70)
     end
 end)
